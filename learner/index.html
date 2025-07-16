@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Learner Dashboard - OmniLearn</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="learner.css" />
+</head>
+<body>
+  <div class="dashboard-header">
+    <a href="#" class="header-logo">
+      <img src="../logo.png" alt="OmniLearn Logo" /> OmniLearn
+    </a>
+    <div class="user-menu" id="user-menu">
+      <span class="user-greeting">Hi <span id="user-name">User</span></span>
+      <span class="user-icon" id="user-icon" tabindex="0" aria-label="User menu">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="8" r="4" fill="#4c6ddb"/>
+          <path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="#4c6ddb"/>
+        </svg>
+      </span>
+      <div class="profile-submenu" id="profile-submenu">
+        <a href="#" id="edit-profile">Edit Profile</a>
+        <a href="#" id="preferences">Preferences</a>
+        <a href="#" id="logout">Logout</a>
+      </div>
+    </div>
+  </div>
+  <div class="learner-layout">
+    <nav class="side-menu">
+      <ul>
+        <li><a href="#" class="active">Dashboard</a></li>
+        <li><a href="#">Enrolled Units</a></li>
+        <li><a href="#">Timetable</a></li>
+        <li><a href="#">Grading</a></li>
+        <li><a href="#">Completed Units</a></li>
+        <li><a href="#">OmniLearn AI</a></li> 
+        <li><a href="#">Certifications</a></li>
+        <li><a href="#">Notice Board</a></li>
+      </ul>
+    </nav>
+    <main class="dashboard-main">
+      <div class="learner-dashboard">
+        <h1>👩‍🎓 Learner Dashboard</h1>
+        <div class="dashboard-section">
+          <h2>📅 Upcoming Classes</h2>
+          <div class="timetable-wrapper">
+            <table class="timetable">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Unit Name</th>
+                  <th>Time</th>
+                  <th>Meeting Link</th>
+                </tr>
+              </thead>
+              <tbody id="timetable-body">
+                <tr>
+                  <td>2024-06-01</td>
+                  <td>Mathematics 101</td>
+                  <td>09:00 - 10:30 AM</td>
+                  <td><a href="#" class="meeting-link">Join</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="dashboard-section">
+          <h2>📊 Progress & Performance</h2>
+          <div class="progress-visuals">
+            <div class="progress-bar-section">
+              <label for="overall-progress">Overall Progress</label>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="overall-progress-bar" style="width: 0%"></div>
+              </div>
+              <span id="overall-progress-label">0%</span>
+            </div>
+            <div class="circular-progress-section">
+              <label>Assignments Due</label>
+              <div class="circular-progress" id="assignments-progress">
+                <span id="assignments-due-label">0</span>
+              </div>
+            </div>
+            <div class="bar-chart-section">
+              <label>Quiz Performance</label>
+              <div class="bar-chart" id="quiz-bar-chart"></div>
+            </div>
+          </div>
+        </div>
+        <div class="dashboard-section">
+          <h2>🏅 Current Level & Improvement Areas</h2>
+                  <ul>
+                    <li>Your current level: <span class="level-badge">Beginner</span></li>
+                    <li>See strengths and areas for improvement</li>
+                  </ul>
+      </div>
+    </main>
+  </div>
+  <div id="ai-chatbox" class="ai-chatbox" style="display: none;">
+    <div class="ai-chatbox-header">
+      <span>
+        🤖 OmniLearn AI
+        <br />
+        <span class="ai-powered-by">Powered by OpenAI</span>
+      </span>
+      <button id="close-ai-chatbox" class="close-chatbox">&times;</button>
+    </div>
+    <div class="ai-chatbox-messages" id="ai-chatbox-messages">
+      <!-- Messages will appear here -->
+    </div>
+    <form class="ai-chatbox-input" id="ai-chatbox-form" autocomplete="off">
+      <input type="text" id="ai-chatbox-input" placeholder="Type your question..." autocomplete="off" />
+      <button type="submit">Send</button>
+    </form>
+  </div>
+  <script src="learner.js"></script>
+</body>
+</html> 

@@ -1,0 +1,131 @@
+body, html {
+  height: 100%;
+  margin: 0;
+  font-family: 'Montserrat', Arial, sans-serif;
+  background: #f7f9fb;
+}
+
+.container {
+  display: flex;
+  height: 100vh;
+}
+
+.left-section {
+  flex: 1.2;
+  position: relative;
+  background: url('https://images.unsplash.com/photo-1513258496099-48168024aec0?auto=format&fit=crop&w=900&q=80') center/cover no-repeat;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 60px 40px;
+  overflow: hidden;
+}
+.left-section::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(rgba(76,109,219,0.85), rgba(123,190,145,0.85));
+  opacity: 0.85;
+  z-index: 0;
+}
+.left-section > * {
+  position: relative;
+  z-index: 1;
+}
+.logo-tagline {
+  margin-bottom: 40px;
+}
+.logo {
+  width: 60px;
+  height: 60px;
+  vertical-align: middle;
+  margin-right: 16px;
+}
+.tagline {
+  font-size: 1.2rem;
+  color: #ffb343;
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+.why-choose h2 {
+  margin-top: 0;
+  color: #ffb343;
+}
+.features-list {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 0 0;
+}
+.features-list li {
+  margin-bottom: 10px;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.right-section {
+  flex: 1;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: -4px 0 24px rgba(76,109,219,0.08);
+}
+.auth-panel {
+  width: 100%;
+  max-width: 350px;
+  background: #f7f9fb;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(76,109,219,0.10);
+  padding: 40px 32px;
+  text-align: center;
+}
+.auth-panel h2 {
+  color: #4c6ddb;
+  margin-bottom: 16px;
+}
+.role-links {
+  margin-top: 24px;
+}
+.role-links a {
+  color: #7ebe91;
+  text-decoration: none;
+  font-weight: 600;
+  margin: 0 8px;
+  transition: color 0.2s;
+}
+.role-links a:hover {
+  color: #4c6ddb;
+}
+
+@media (max-width: 900px) {
+  .container {
+    flex-direction: column;
+  }
+  .left-section, .right-section {
+    flex: none;
+    width: 100%;
+    min-height: 50vh;
+    box-shadow: none;
+  }
+  .left-section {
+    padding: 40px 20px;
+    border-radius: 0 0 32px 32px;
+  }
+  .right-section {
+    padding: 40px 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .auth-panel {
+    padding: 24px 8px;
+  }
+  .left-section {
+    padding: 24px 8px;
+  }
+  .logo {
+    width: 40px;
+    height: 40px;
+  }
+} 
