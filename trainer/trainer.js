@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', function () {
   async function renderTrainerDashboardSummary() {
     const dashboardMain = document.querySelector('.dashboard-main');
     if (!dashboardMain) return;
-    dashboardMain.innerHTML = '<div class="dashboard-loading">Loading dashboard...</div>';
+    dashboardMain.innerHTML = '<div class="dashboard-loading"><div class="spinner"></div><div class="loader-text">Loading dashboard...</div></div>';
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not signed in');
@@ -146,10 +146,10 @@ document.addEventListener('DOMContentLoaded', function () {
         <button id="create-course-btn">Create New Course</button>
         <button id="create-assignment-btn">Create New Assignment</button>
         <div id="courses-list">
-          <p>Loading courses...</p>
+          <div class='dashboard-loading'><div class='spinner'></div><div class='loader-text'>Loading courses...</div></div>
         </div>
         <div id="assignments-list" style="margin-top: 30px;">
-          <p>Loading assignments...</p>
+          <div class='dashboard-loading'><div class='spinner'></div><div class='loader-text'>Loading assignments...</div></div>
         </div>
       </div>
     `;
@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function () {
       <div class="trainer-dashboard">
         <h1>📈 Learner Progress & Analytics</h1>
         <div id="courses-progress-list">
-          <p>Loading your courses...</p>
+          <div class='dashboard-loading'><div class='spinner'></div><div class='loader-text'>Loading your courses...</div></div>
         </div>
         <div id="course-learners-progress" style="margin-top: 32px;"></div>
       </div>
@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function () {
   async function renderLearnersForCourse(courseId) {
     const container = document.getElementById('course-learners-progress');
     if (!container) return;
-    container.innerHTML = '<p>Loading learners...</p>';
+    container.innerHTML = '<div class="dashboard-loading"><div class="spinner"></div><div class="loader-text">Loading learners...</div></div>';
     try {
       // Get learners enrolled in this course
       const { data: enrollments, error: enrollError } = await supabase
@@ -299,7 +299,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <h1>📢 Notice Board</h1>
         <button id="post-notice-btn">Post Update</button>
         <div id="notice-board">
-          <p>Loading notices...</p>
+          <div class='dashboard-loading'><div class='spinner'></div><div class='loader-text'>Loading notices...</div></div>
         </div>
       </div>
     `;
@@ -408,6 +408,32 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
   attachUserDropdownListeners();
+  renderTrainerDashboardSummary();
+
+  // Responsive menu toggle
+  const menuToggle = document.getElementById('menu-toggle');
+  const sideMenu = document.getElementById('side-menu');
+  if (menuToggle && sideMenu) {
+    menuToggle.addEventListener('click', function() {
+      sideMenu.classList.toggle('open');
+    });
+    // Close menu when clicking outside (mobile)
+    document.addEventListener('click', function(e) {
+      if (window.innerWidth <= 900 && sideMenu.classList.contains('open')) {
+        if (!sideMenu.contains(e.target) && !menuToggle.contains(e.target)) {
+          sideMenu.classList.remove('open');
+        }
+      }
+    });
+    // Hide sidebar when a menu link is clicked (mobile)
+    sideMenu.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', function() {
+        if (window.innerWidth <= 900) {
+          sideMenu.classList.remove('open');
+        }
+      });
+    });
+  }
 });
 
 // Load courses from Supabase

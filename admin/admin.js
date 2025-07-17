@@ -34,8 +34,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   attachUserDropdownListeners();
 
-  // Sidebar navigation logic
+  // Automatically load dashboard content by default
   const menuLinks = document.querySelectorAll('.side-menu a');
+  if (menuLinks[0]) menuLinks[0].click();
+
+  // Sidebar navigation logic
   const dashboardMain = document.querySelector('.dashboard-main');
   const dashboardContent = dashboardMain ? dashboardMain.innerHTML : '';
 

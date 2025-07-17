@@ -151,9 +151,22 @@ async function fetchLearnerDashboardData() {
 async function renderDashboard() {
   const dashboardMain = document.querySelector('.dashboard-main');
   if (!dashboardMain) return;
-  dashboardMain.innerHTML = '<div class="dashboard-loading">Loading dashboard...</div>';
+  dashboardMain.innerHTML = '<div class="dashboard-loading"><div class="spinner"></div><div class="loader-text">Loading dashboard...</div></div>';
   try {
     const data = await fetchLearnerDashboardData();
+    // --- Quiz Weak Topics (from localStorage) ---
+    const userId = (await supabase.auth.getUser()).data.user.id;
+    let allWeakTopics = {};
+    (data.courses || []).forEach(course => {
+      let quizHistory = JSON.parse(localStorage.getItem(`quizHistory_${userId}_${course.id}`) || '[]');
+      quizHistory.forEach(q => {
+        if (q.weakTopics) {
+          for (const topic in q.weakTopics) {
+            allWeakTopics[topic] = (allWeakTopics[topic] || 0) + q.weakTopics[topic];
+          }
+        }
+      });
+    });
     // Render main dashboard content
     dashboardMain.innerHTML = `
       <div class="learner-dashboard">
@@ -213,11 +226,11 @@ async function renderDashboard() {
         </div>
         <div class="dashboard-section">
           <h2>🏅 Current Level & Improvement Areas</h2>
-          <ul>
-            <li>Your current level: <span class="level-badge">Beginner</span></li>
-            <li>See strengths and areas for improvement</li>
-          </ul>
-        </div>
+                  <ul>
+                    <li>Your current level: <span class="level-badge">Beginner</span></li>
+                    <li>See strengths and areas for improvement</li>
+                    ${Object.keys(allWeakTopics).length ? `<li><b>Weak Topics:</b> ${Object.keys(allWeakTopics).join(', ')}</li>` : ''}
+                  </ul>
       </div>
     `;
   } catch (err) {
@@ -229,7 +242,7 @@ async function renderDashboard() {
 async function renderEnrolledUnits() {
   const dashboardMain = document.querySelector('.dashboard-main');
   if (!dashboardMain) return;
-  dashboardMain.innerHTML = '<div class="dashboard-loading">Loading enrolled units...</div>';
+  dashboardMain.innerHTML = '<div class="dashboard-loading"><div class="spinner"></div><div class="loader-text">Loading enrolled units...</div></div>';
   try {
     const data = await fetchLearnerDashboardData();
     dashboardMain.innerHTML = `
@@ -259,7 +272,7 @@ async function renderEnrolledUnits() {
 async function renderFullTimetable() {
   const dashboardMain = document.querySelector('.dashboard-main');
   if (!dashboardMain) return;
-  dashboardMain.innerHTML = '<div class="dashboard-loading">Loading timetable...</div>';
+  dashboardMain.innerHTML = '<div class="dashboard-loading"><div class="spinner"></div><div class="loader-text">Loading timetable...</div></div>';
   try {
     const data = await fetchLearnerDashboardData();
     dashboardMain.innerHTML = `
@@ -302,7 +315,7 @@ async function renderFullTimetable() {
 async function renderGrading() {
   const dashboardMain = document.querySelector('.dashboard-main');
   if (!dashboardMain) return;
-  dashboardMain.innerHTML = '<div class="dashboard-loading">Loading grading...</div>';
+  dashboardMain.innerHTML = '<div class="dashboard-loading"><div class="spinner"></div><div class="loader-text">Loading grading...</div></div>';
   try {
     const data = await fetchLearnerDashboardData();
     // Group grades by course
@@ -371,7 +384,7 @@ async function renderGrading() {
 async function renderCompletedUnits() {
   const dashboardMain = document.querySelector('.dashboard-main');
   if (!dashboardMain) return;
-  dashboardMain.innerHTML = '<div class="dashboard-loading">Loading completed units...</div>';
+  dashboardMain.innerHTML = '<div class="dashboard-loading"><div class="spinner"></div><div class="loader-text">Loading completed units...</div></div>';
   try {
     const data = await fetchLearnerDashboardData();
     dashboardMain.innerHTML = `
@@ -399,7 +412,7 @@ async function renderCompletedUnits() {
 async function renderCertifications() {
   const dashboardMain = document.querySelector('.dashboard-main');
   if (!dashboardMain) return;
-  dashboardMain.innerHTML = '<div class="dashboard-loading">Loading certifications...</div>';
+  dashboardMain.innerHTML = '<div class="dashboard-loading"><div class="spinner"></div><div class="loader-text">Loading certifications...</div></div>';
   try {
     const data = await fetchLearnerDashboardData();
     dashboardMain.innerHTML = `
@@ -427,7 +440,7 @@ async function renderCertifications() {
 async function renderNoticeBoard() {
   const dashboardMain = document.querySelector('.dashboard-main');
   if (!dashboardMain) return;
-  dashboardMain.innerHTML = '<div class="dashboard-loading">Loading notices...</div>';
+  dashboardMain.innerHTML = '<div class="dashboard-loading"><div class="spinner"></div><div class="loader-text">Loading notices...</div></div>';
   try {
     const { data: notices, error } = await supabase
       .from('notices')
@@ -478,6 +491,175 @@ async function renderNoticeBoard() {
       </div>
     `;
   }
+}
+
+// --- ASSIGNMENTS ---
+async function renderAssignments() {
+  const dashboardMain = document.querySelector('.dashboard-main');
+  if (!dashboardMain) return;
+  dashboardMain.innerHTML = '<div class="dashboard-loading"><div class="spinner"></div><div class="loader-text">Loading assignments...</div></div>';
+  try {
+    const data = await fetchLearnerDashboardData();
+    const assignments = data.assignments;
+    const courses = data.courses;
+    if (!assignments.length) {
+      dashboardMain.innerHTML = '<div class="dashboard-section"><h2>📑 Assignments</h2><div>No assignments found for your enrolled courses.</div></div>';
+    } else {
+      dashboardMain.innerHTML = `
+        <div class="assignments-section">
+          <h2>📑 Assignments</h2>
+          <div class="assignments-list">
+            ${assignments.map(a => {
+              const course = courses.find(c => c.id === a.course_id);
+              return `
+                <div class="assignment-card${a.completed ? ' completed' : ''}">
+                  <div class="assignment-title">${a.title}</div>
+                  <div class="assignment-course">Course: ${course ? course.title : 'Unknown'}</div>
+                  <div class="assignment-desc">${a.description || ''}</div>
+                  <div class="assignment-due">Due: ${a.due_date ? new Date(a.due_date).toLocaleDateString() : 'N/A'}</div>
+                  <div class="assignment-status">Status: <span>${a.completed ? 'Completed' : 'Pending'}</span></div>
+                  ${!a.completed ? `<button class="complete-assignment-btn" data-id="${a.id}">Mark as Complete</button>` : '<span class="assignment-complete-label">✔️ Completed</span>'}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }
+    // Add event listeners for complete buttons
+    document.querySelectorAll('.complete-assignment-btn').forEach(btn => {
+      btn.addEventListener('click', async function() {
+        const assignmentId = this.getAttribute('data-id');
+        this.disabled = true;
+        this.textContent = 'Marking...';
+        // Mark assignment as complete in DB (simulate with update)
+        const { error } = await supabase
+          .from('assignments')
+          .update({ completed: true })
+          .eq('id', assignmentId);
+        if (!error) {
+          this.parentElement.classList.add('completed');
+          this.parentElement.querySelector('.assignment-status span').textContent = 'Completed';
+          this.remove();
+        } else {
+          this.disabled = false;
+          this.textContent = 'Mark as Complete';
+          alert('Error marking assignment as complete.');
+        }
+      });
+    });
+    // --- QUIZZES SECTION ---
+    const quizzesSection = document.createElement('div');
+    quizzesSection.className = 'quizzes-section';
+    quizzesSection.innerHTML = `
+      <h2>📝 Quizzes</h2>
+      <div id="quiz-controls">
+        <label for="quiz-course-select">Select Course:</label>
+        <select id="quiz-course-select">
+          ${courses.map(c => `<option value="${c.id}">${c.title}</option>`).join('')}
+        </select>
+        <button id="start-quiz-btn">Start New Quiz</button>
+      </div>
+      <div id="quiz-area"></div>
+    `;
+    dashboardMain.appendChild(quizzesSection);
+    document.getElementById('start-quiz-btn').addEventListener('click', async function() {
+      const courseId = document.getElementById('quiz-course-select').value;
+      if (!courseId) {
+        showCustomAlert('Please select a course before starting a quiz.');
+        return;
+      }
+      await startQuiz(courseId, courses);
+    });
+  } catch (err) {
+    dashboardMain.innerHTML = `<div class="dashboard-error">Error loading assignments: ${err.message}</div>`;
+  }
+}
+
+// --- SMART QUIZ GENERATION SYSTEM ---
+async function startQuiz(courseId, courses) {
+  const quizArea = document.getElementById('quiz-area');
+  quizArea.innerHTML = '<div class="dashboard-loading"><div class="spinner"></div><div class="loader-text">Generating quiz...</div></div>';
+  // Fetch learner's previous quiz performance (simulate with localStorage for now)
+  const userId = (await supabase.auth.getUser()).data.user.id;
+  let quizHistory = JSON.parse(localStorage.getItem(`quizHistory_${userId}_${courseId}`) || '[]');
+  // Determine difficulty
+  let difficulty = 'easy';
+  if (quizHistory.length > 0 && quizHistory[quizHistory.length - 1].score >= 70) {
+    difficulty = 'medium';
+  }
+  if (quizHistory.length > 1 && quizHistory[quizHistory.length - 1].score >= 70 && quizHistory[quizHistory.length - 2].score >= 70) {
+    difficulty = 'hard';
+  }
+  // Track weak topics
+  let weakTopics = {};
+  quizHistory.forEach(q => {
+    if (q.weakTopics) {
+      for (const topic in q.weakTopics) {
+        weakTopics[topic] = (weakTopics[topic] || 0) + q.weakTopics[topic];
+      }
+    }
+  });
+  // Prepare prompt for AI quiz generation
+  const course = courses.find(c => c.id == courseId);
+  let prompt = `Generate a ${difficulty} quiz for the course "${course.title}". The quiz should have up to 20 questions. Each question should be tagged with its topic and unit. If possible, include more questions from these weak topics: ${Object.keys(weakTopics).join(', ') || 'none'}. Format as JSON: [{question, options, answer, topic, unit}].`;
+  // Call AI service
+  let quizQuestions = [];
+  try {
+    const aiQuiz = await aiService.sendMessage(prompt, userId, 'learner');
+    quizQuestions = JSON.parse(aiQuiz);
+  } catch (e) {
+    quizArea.innerHTML = '<div class="dashboard-error">Failed to generate quiz. Please try again.</div>';
+    return;
+  }
+  // Render quiz UI
+  let currentQ = 0;
+  let score = 0;
+  let userAnswers = [];
+  let topicStats = {};
+  function renderQuestion() {
+    if (currentQ >= quizQuestions.length) {
+      // Quiz complete
+      let weakTopicsResult = {};
+      for (const topic in topicStats) {
+        if (topicStats[topic].correct / topicStats[topic].total < 0.7) {
+          weakTopicsResult[topic] = topicStats[topic].total - topicStats[topic].correct;
+        }
+      }
+      quizArea.innerHTML = `<div class="quiz-result">
+        <h3>Quiz Complete!</h3>
+        <div>Score: ${score} / ${quizQuestions.length} (${Math.round((score/quizQuestions.length)*100)}%)</div>
+        <div>${Object.keys(weakTopicsResult).length ? 'You are weak in: ' + Object.keys(weakTopicsResult).join(', ') : 'Great job! No weak topics detected.'}</div>
+        <button id="retake-quiz-btn">Retake Quiz</button>
+      </div>`;
+      // Save quiz history
+      quizHistory.push({score: Math.round((score/quizQuestions.length)*100), weakTopics: weakTopicsResult});
+      localStorage.setItem(`quizHistory_${userId}_${courseId}`, JSON.stringify(quizHistory));
+      document.getElementById('retake-quiz-btn').onclick = () => startQuiz(courseId, courses);
+      return;
+    }
+    const q = quizQuestions[currentQ];
+    quizArea.innerHTML = `<div class="quiz-question">
+      <div class="quiz-q-title"><b>Q${currentQ+1}:</b> ${q.question}</div>
+      <div class="quiz-q-options">
+        ${q.options.map((opt, i) => `<label><input type="radio" name="quiz-q" value="${opt}"> ${opt}</label><br>`).join('')}
+      </div>
+      <button id="submit-q-btn">Submit Answer</button>
+    </div>`;
+    document.getElementById('submit-q-btn').onclick = () => {
+      const selected = document.querySelector('input[name="quiz-q"]:checked');
+      if (!selected) return alert('Please select an answer.');
+      userAnswers.push({q: q.question, answer: selected.value, correct: selected.value === q.answer, topic: q.topic, unit: q.unit});
+      if (selected.value === q.answer) score++;
+      // Track topic stats
+      if (!topicStats[q.topic]) topicStats[q.topic] = {correct:0, total:0};
+      topicStats[q.topic].total++;
+      if (selected.value === q.answer) topicStats[q.topic].correct++;
+      currentQ++;
+      renderQuestion();
+    };
+  }
+  renderQuestion();
 }
 
 function getPriorityColor(priority) {
@@ -672,6 +854,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const completedMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase().includes('completed'));
   const certificationsMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase().includes('certification'));
   const dashboardMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase() === 'dashboard');
+  const assignmentsMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase().includes('assignments'));
 
   if (enrolledMenuItem) {
     enrolledMenuItem.addEventListener('click', function(e) {
@@ -715,6 +898,12 @@ document.addEventListener('DOMContentLoaded', function () {
       attachUserDropdownListeners();
     });
   }
+  if (assignmentsMenuItem) {
+    assignmentsMenuItem.addEventListener('click', function(e) {
+      e.preventDefault();
+      renderAssignments();
+    });
+  }
 
   // Notice Board dynamic content
   const noticeMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase().includes('notice'));
@@ -734,4 +923,44 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
   attachUserDropdownListeners();
+  renderDashboard();
+
+  // Responsive menu toggle
+  const menuToggle = document.getElementById('menu-toggle');
+  const sideMenu = document.getElementById('side-menu');
+  if (menuToggle && sideMenu) {
+    menuToggle.addEventListener('click', function() {
+      sideMenu.classList.toggle('open');
+    });
+    // Close menu when clicking outside (mobile)
+    document.addEventListener('click', function(e) {
+      if (window.innerWidth <= 900 && sideMenu.classList.contains('open')) {
+        if (!sideMenu.contains(e.target) && !menuToggle.contains(e.target)) {
+          sideMenu.classList.remove('open');
+        }
+      }
+    });
+    // Hide sidebar when a menu link is clicked (mobile)
+    sideMenu.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', function() {
+        if (window.innerWidth <= 900) {
+          sideMenu.classList.remove('open');
+        }
+      });
+    });
+  }
 }); 
+
+function showCustomAlert(message) {
+  let alertBox = document.querySelector('.custom-alert');
+  if (!alertBox) {
+    alertBox = document.createElement('div');
+    alertBox.className = 'custom-alert';
+    document.body.appendChild(alertBox);
+  }
+  alertBox.textContent = message;
+  alertBox.classList.add('show');
+  setTimeout(() => {
+    alertBox.classList.remove('show');
+  }, 5000);
+} 
