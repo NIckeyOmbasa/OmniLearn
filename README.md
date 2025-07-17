@@ -40,9 +40,9 @@ OmniLearn is a full-featured, AI-powered Learning Management System (LMS) design
 ### Run the project on:
 https://omnilearn-project.netlify.app
 #### Test user logins:
-**Admin**: email: admin@omnilearn.com  password: admin
-**Trainer**: email: trainer@omnilearn.com  password: trainer
-**Learner**: email: learner@omnilearn.com  password: learner
+- **Admin**: email: admin@omnilearn.com  password: admin
+- **Trainer**: email: trainer@omnilearn.com  password: trainer
+- **Learner**: email: learner@omnilearn.com  password: learner
 
 
 ------------------------- OR -----------------------------
