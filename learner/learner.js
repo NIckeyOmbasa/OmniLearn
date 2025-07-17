@@ -1,44 +1,507 @@
+import { supabase } from '../supabase.js';
+import { aiService } from '../ai-service.js';
+import { alertService } from '../alert-service.js';
+import { userManagement } from '../user-management.js';
+
 // JavaScript for Learner Dashboard (OmniLearn)
 // Add interactivity here
 
-document.addEventListener('DOMContentLoaded', function () {
-  const userIcon = document.getElementById('user-icon');
-  const submenu = document.getElementById('profile-submenu');
-  // Example: Set username dynamically (replace with actual user data)
-  document.getElementById('user-name').textContent = 'User'; // Replace 'User' with actual name from auth
+function attachUserDropdownListeners() {
+  const editProfile = document.getElementById('edit-profile');
+  const preferences = document.getElementById('preferences');
+  const logout = document.getElementById('logout');
+  if (editProfile) {
+    editProfile.onclick = function(e) {
+      e.preventDefault();
+      if (window.userManagement) window.userManagement.showEditProfileModal();
+    };
+  }
+  if (preferences) {
+    preferences.onclick = function(e) {
+      e.preventDefault();
+      if (window.userManagement) window.userManagement.showPreferencesModal();
+    };
+  }
+  if (logout) {
+    logout.onclick = function(e) {
+      e.preventDefault();
+      if (window.userManagement) window.userManagement.showLogoutConfirmation();
+    };
+  }
+}
 
-  function closeMenu(e) {
-    if (!submenu.contains(e.target) && !userIcon.contains(e.target)) {
-      submenu.classList.remove('active');
-      document.removeEventListener('mousedown', closeMenu);
-    }
+// --- DASHBOARD DYNAMIC FETCHING ---
+
+async function fetchLearnerDashboardData() {
+  // Get current user
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not signed in');
+  const userId = user.id;
+
+  // Fetch enrollments with course and instructor info
+  const { data: enrollments, error: enrollmentsError } = await supabase
+    .from('enrollments')
+    .select('*, courses(*, created_by), courses:course_id(*, created_by), profiles:learner_id(full_name)')
+    .eq('learner_id', userId);
+
+  // Fetch courses for timetable and progress
+  const courseIds = enrollments ? enrollments.map(e => e.course_id) : [];
+  let courses = [];
+  if (courseIds.length > 0) {
+    const { data: coursesData } = await supabase
+      .from('courses')
+      .select('*')
+      .in('id', courseIds);
+    courses = coursesData || [];
   }
 
-  userIcon.addEventListener('click', function (e) {
-    submenu.classList.toggle('active');
-    if (submenu.classList.contains('active')) {
-      setTimeout(() => document.addEventListener('mousedown', closeMenu), 0);
-    } else {
-      document.removeEventListener('mousedown', closeMenu);
-    }
-  });
+  // Fetch assignments for assignments due
+  let assignments = [];
+  if (courseIds.length > 0) {
+    const { data: assignmentsData } = await supabase
+      .from('assignments')
+      .select('*')
+      .in('course_id', courseIds);
+    assignments = assignmentsData || [];
+  }
 
-  // Optional: Keyboard accessibility
-  userIcon.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' || e.key === ' ') {
-      submenu.classList.toggle('active');
-      if (submenu.classList.contains('active')) {
-        setTimeout(() => document.addEventListener('mousedown', closeMenu), 0);
-      } else {
-        document.removeEventListener('mousedown', closeMenu);
-      }
+  // Fetch progress/grades
+  let progress = [];
+  if (courseIds.length > 0) {
+    const { data: progressData } = await supabase
+      .from('progress')
+      .select('*')
+      .eq('learner_id', userId)
+      .in('course_id', courseIds);
+    progress = progressData || [];
+  }
+
+  // Fetch quiz performance (from assignments or progress)
+  // For simplicity, use assignments of type 'quiz' and their grades
+  let quizPerformance = [];
+  if (assignments.length > 0) {
+    quizPerformance = assignments
+      .filter(a => a.type === 'quiz' && a.grade !== undefined && a.grade !== null)
+      .map(a => ({ label: courses.find(c => c.id === a.course_id)?.title || a.title, value: a.grade }));
+  }
+
+  // Completed units (from progress or enrollments with completed flag)
+  let completedUnits = [];
+  if (progress.length > 0) {
+    completedUnits = progress.filter(p => p.completed).map(p => {
+      const course = courses.find(c => c.id === p.course_id);
+      return {
+        code: course?.code || '',
+        name: course?.title || '',
+        instructor: course?.instructor || '',
+        completedDate: p.completed_at ? new Date(p.completed_at).toLocaleDateString() : ''
+      };
+    });
+  }
+
+  // Certifications (if all units completed)
+  let certifications = [];
+  let allUnitsCompleted = false;
+  if (courses.length > 0 && completedUnits.length === courses.length) {
+    allUnitsCompleted = true;
+    // Optionally fetch from certifications table
+    // For now, simulate
+    certifications = [{ course: 'OmniLearn Full Course', date: new Date().toLocaleDateString(), file: '#' }];
+  }
+
+  // Timetable: use courses with schedule fields (date, time, link)
+  let timetable = courses.map(c => ({
+    date: c.date || '',
+    day: c.day || '',
+    unit: c.title,
+    code: c.code,
+    instructor: c.instructor || '',
+    time: c.time || '',
+    link: c.meeting_link || '#'
+  }));
+
+  // Progress bar: average progress from progress table
+  let overallProgress = 0;
+  if (progress.length > 0) {
+    overallProgress = Math.round(progress.reduce((sum, p) => sum + (p.progress || 0), 0) / progress.length);
+  }
+
+  // Assignments due: count assignments with due_date in future and not completed
+  const now = new Date();
+  const assignmentsDue = assignments.filter(a => a.due_date && new Date(a.due_date) > now && !a.completed).length;
+  const totalAssignments = assignments.length;
+
+  return {
+    enrollments,
+    courses,
+    assignments,
+    progress,
+    quizPerformance,
+    completedUnits,
+    certifications,
+    allUnitsCompleted,
+    timetable,
+    overallProgress,
+    assignmentsDue,
+    totalAssignments
+  };
+}
+
+// --- MAIN DASHBOARD RENDER ---
+async function renderDashboard() {
+  const dashboardMain = document.querySelector('.dashboard-main');
+  if (!dashboardMain) return;
+  dashboardMain.innerHTML = '<div class="dashboard-loading">Loading dashboard...</div>';
+  try {
+    const data = await fetchLearnerDashboardData();
+    // Render main dashboard content
+    dashboardMain.innerHTML = `
+      <div class="learner-dashboard">
+        <h1>👩‍🎓 Learner Dashboard</h1>
+        <div class="dashboard-section">
+          <h2>📅 Upcoming Classes</h2>
+          <div class="timetable-wrapper">
+            <table class="timetable">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Unit Name</th>
+                  <th>Time</th>
+                  <th>Meeting Link</th>
+                </tr>
+              </thead>
+              <tbody id="timetable-body">
+                ${data.timetable.map(row => `
+                  <tr>
+                    <td>${row.date}</td>
+                    <td>${row.unit}</td>
+                    <td>${row.time}</td>
+                    <td><a href="${row.link}" class="meeting-link" target="_blank">Join</a></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="dashboard-section">
+          <h2>📊 Progress & Performance</h2>
+          <div class="progress-visuals">
+            <div class="progress-bar-section">
+              <label for="overall-progress">Overall Progress</label>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" id="overall-progress-bar" style="width: ${data.overallProgress}%"></div>
+              </div>
+              <span id="overall-progress-label">${data.overallProgress}%</span>
+            </div>
+            <div class="circular-progress-section">
+              <label>Assignments Due</label>
+              <div class="circular-progress" id="assignments-progress" style="background: conic-gradient(#ffb343 0% ${Math.round((data.assignmentsDue / (data.totalAssignments || 1)) * 100)}%, #e6eefd ${Math.round((data.assignmentsDue / (data.totalAssignments || 1)) * 100)}% 100%)">
+                <span id="assignments-due-label">${data.assignmentsDue}</span>
+              </div>
+            </div>
+            <div class="bar-chart-section">
+              <label>Quiz Performance</label>
+              <div class="bar-chart" id="quiz-bar-chart">
+                ${data.quizPerformance.map(q => `
+                  <div class="bar" style="height: ${q.value}%">
+                    <span class="bar-label">${q.value}%</span><div class="bar-x-label">${q.label}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="dashboard-section">
+          <h2>🏅 Current Level & Improvement Areas</h2>
+          <ul>
+            <li>Your current level: <span class="level-badge">Beginner</span></li>
+            <li>See strengths and areas for improvement</li>
+          </ul>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    dashboardMain.innerHTML = `<div class="dashboard-error">Error loading dashboard: ${err.message}</div>`;
+  }
+}
+
+// --- ENROLLED UNITS ---
+async function renderEnrolledUnits() {
+  const dashboardMain = document.querySelector('.dashboard-main');
+  if (!dashboardMain) return;
+  dashboardMain.innerHTML = '<div class="dashboard-loading">Loading enrolled units...</div>';
+  try {
+    const data = await fetchLearnerDashboardData();
+    dashboardMain.innerHTML = `
+      <div class="enrolled-units-section">
+        <h2>📚 Enrolled Units</h2>
+        <div class="enrolled-units-list">
+          ${data.courses.map(unit => `
+            <div class="enrolled-unit-card">
+              <div class="unit-code">${unit.code || ''}</div>
+              <div class="unit-name">${unit.title || ''}</div>
+              <div class="unit-instructor">Instructor: ${unit.instructor || ''}</div>
+              <div class="unit-progress-bar-bg">
+                <div class="unit-progress-bar-fill" style="width: ${unit.progress || 0}%"></div>
+              </div>
+              <div class="unit-progress-label">${unit.progress || 0}% complete</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    dashboardMain.innerHTML = `<div class="dashboard-error">Error loading enrolled units: ${err.message}</div>`;
+  }
+}
+
+// --- TIMETABLE ---
+async function renderFullTimetable() {
+  const dashboardMain = document.querySelector('.dashboard-main');
+  if (!dashboardMain) return;
+  dashboardMain.innerHTML = '<div class="dashboard-loading">Loading timetable...</div>';
+  try {
+    const data = await fetchLearnerDashboardData();
+    dashboardMain.innerHTML = `
+      <div class="timetable-section">
+        <h2>📅 Full Timetable</h2>
+        <div class="timetable-wrapper">
+          <table class="timetable">
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Time</th>
+                <th>Unit Name</th>
+                <th>Unit Code</th>
+                <th>Instructor</th>
+                <th>Meeting Link</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.timetable.map(row => `
+                <tr>
+                  <td>${row.day}</td>
+                  <td>${row.time}</td>
+                  <td>${row.unit}</td>
+                  <td>${row.code}</td>
+                  <td>${row.instructor}</td>
+                  <td><a href="${row.link}" class="meeting-link" target="_blank">Join</a></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    dashboardMain.innerHTML = `<div class="dashboard-error">Error loading timetable: ${err.message}</div>`;
+  }
+}
+
+// --- GRADING ---
+async function renderGrading() {
+  const dashboardMain = document.querySelector('.dashboard-main');
+  if (!dashboardMain) return;
+  dashboardMain.innerHTML = '<div class="dashboard-loading">Loading grading...</div>';
+  try {
+    const data = await fetchLearnerDashboardData();
+    // Group grades by course
+    const gradingData = data.progress.map(p => {
+      const course = data.courses.find(c => c.id === p.course_id);
+      return {
+        unit: course?.title || '',
+        code: course?.code || '',
+        quizzes: p.quizzes || [], // Assume quizzes is an array of {grade, date}
+      };
+    });
+    let total = 0, count = 0;
+    gradingData.forEach(row => {
+      row.quizzes.forEach(q => { total += q.grade; count++; });
+    });
+    const avg = count ? (total / count).toFixed(2) : 'N/A';
+    dashboardMain.innerHTML = `
+      <div class="grading-section">
+        <h2>📝 Grading</h2>
+        <div class="grading-table-wrapper">
+          <table class="grading-table">
+            <thead>
+              <tr>
+                <th>Unit Name</th>
+                <th>Unit Code</th>
+                <th>Quiz Grades (Date)</th>
+                <th>Unit Average</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${gradingData.map(row => {
+                const unitAvg = row.quizzes.length ? (row.quizzes.reduce((a,b) => a+b.grade,0)/row.quizzes.length).toFixed(2) : 'N/A';
+                return `<tr>
+                  <td>${row.unit}</td>
+                  <td>${row.code}</td>
+                  <td>${row.quizzes.map(q => `<span class='quiz-grade'>${q.grade} <span class='quiz-date'>(${q.date})</span></span>`).join(', ')}</td>
+                  <td>${unitAvg}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div class="grading-average">Overall Average: <span>${avg}</span></div>
+        <div class="grading-recommendations">
+          ${(() => {
+            const weakUnits = gradingData.filter(row => {
+              if (!row.quizzes.length) return false;
+              const unitAvg = row.quizzes.reduce((a,b) => a+b.grade,0)/row.quizzes.length;
+              return unitAvg < 80;
+            });
+            if (weakUnits.length === 0) {
+              return '<span class="congrats">🎉 Great job! You are performing well in all units.</span>';
+            } else {
+              return '<span class="recommend-title">Recommendations:</span> ' + weakUnits.map(row => `<span class="recommend-unit">${row.unit}</span>`).join(', ') + '<span class="recommend-msg"> — Focus on these areas to improve your performance.</span>';
+            }
+          })()}
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    dashboardMain.innerHTML = `<div class="dashboard-error">Error loading grading: ${err.message}</div>`;
+  }
+}
+
+// --- COMPLETED UNITS ---
+async function renderCompletedUnits() {
+  const dashboardMain = document.querySelector('.dashboard-main');
+  if (!dashboardMain) return;
+  dashboardMain.innerHTML = '<div class="dashboard-loading">Loading completed units...</div>';
+  try {
+    const data = await fetchLearnerDashboardData();
+    dashboardMain.innerHTML = `
+      <div class="completed-units-section">
+        <h2>✅ Completed Units</h2>
+        <div class="completed-units-list">
+          ${data.completedUnits.length === 0 ? '<div class="no-completed">No units completed yet.</div>' :
+            data.completedUnits.map(unit => `
+              <div class="completed-unit-card">
+                <div class="unit-code">${unit.code}</div>
+                <div class="unit-name">${unit.name}</div>
+                <div class="unit-instructor">Instructor: ${unit.instructor}</div>
+                <div class="unit-completed-date">Completed: ${unit.completedDate}</div>
+              </div>
+            `).join('')}
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    dashboardMain.innerHTML = `<div class="dashboard-error">Error loading completed units: ${err.message}</div>`;
+  }
+}
+
+// --- CERTIFICATIONS ---
+async function renderCertifications() {
+  const dashboardMain = document.querySelector('.dashboard-main');
+  if (!dashboardMain) return;
+  dashboardMain.innerHTML = '<div class="dashboard-loading">Loading certifications...</div>';
+  try {
+    const data = await fetchLearnerDashboardData();
+    dashboardMain.innerHTML = `
+      <div class="certifications-section">
+        <h2>🎓 Certifications</h2>
+        <div class="certifications-list">
+          ${data.allUnitsCompleted && data.certifications.length > 0 ?
+            data.certifications.map(cert => `
+              <div class="cert-card">
+                <div class="cert-title">${cert.course}</div>
+                <div class="cert-date">Awarded: ${cert.date}</div>
+                <a href="${cert.file}" class="cert-download" download>Download Certificate</a>
+              </div>
+            `).join('') :
+            '<div class="no-cert">Certificates are only available when all units are completed at 100%.</div>'}
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    dashboardMain.innerHTML = `<div class="dashboard-error">Error loading certifications: ${err.message}</div>`;
+  }
+}
+
+// --- NOTICE BOARD ---
+async function renderNoticeBoard() {
+  const dashboardMain = document.querySelector('.dashboard-main');
+  if (!dashboardMain) return;
+  dashboardMain.innerHTML = '<div class="dashboard-loading">Loading notices...</div>';
+  try {
+    const { data: notices, error } = await supabase
+      .from('notices')
+      .select('*')
+      .order('is_pinned', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) {
+      dashboardMain.innerHTML = `
+        <div class="notice-board-section">
+          <h2>📢 Notice Board</h2>
+          <div class="notice-list">
+            <div class="no-notice">Error loading notices: ${error.message}</div>
+          </div>
+        </div>
+      `;
+      return;
     }
-  });
+
+    dashboardMain.innerHTML = `
+      <div class="notice-board-section">
+        <h2>📢 Notice Board</h2>
+        <div class="notice-list">
+          ${!notices || notices.length === 0 ? '<div class="no-notice">No notices at this time.</div>' :
+            notices.map(notice => `
+              <div class="notice-card ${notice.sender_role ? notice.sender_role.toLowerCase() : ''}" style="border-left-color: ${getPriorityColor(notice.priority)}; position: relative;">
+                ${notice.is_pinned ? '<div style=\"position: absolute; top: 10px; right: 10px; background: #ffb343; color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;\">📌 PINNED</div>' : ''}
+                <div class="notice-header">
+                  <span class="notice-sender">${notice.sender_name || ''} ${notice.sender_role ? '(' + notice.sender_role + ')' : ''}</span>
+                  <span class="notice-date">${notice.created_at ? new Date(notice.created_at).toLocaleDateString() : ''}</span>
+                </div>
+                <div class="notice-title">${notice.title}</div>
+                <div class="notice-message">${notice.message}</div>
+                ${notice.expires_at ? `<div style=\"margin-top: 8px; font-size: 0.8rem; color: #ffb343;\">⏰ Expires: ${new Date(notice.expires_at).toLocaleDateString()}</div>` : ''}
+              </div>
+            `).join('')}
+        </div>
+      </div>
+    `;
+  } catch (error) {
+    dashboardMain.innerHTML = `
+      <div class="notice-board-section">
+        <h2>📢 Notice Board</h2>
+        <div class="notice-list">
+          <div class="no-notice">Error loading notices: ${error.message}</div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function getPriorityColor(priority) {
+  switch (priority) {
+    case 'urgent': return '#dc3545';
+    case 'high': return '#ffb343';
+    case 'normal': return '#4c6ddb';
+    case 'low': return '#7ebe91';
+    default: return '#4c6ddb';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  // User management is now handled by the userManagement module
+  // The module will automatically set up the user menu and handle all user actions
 
   // OmniLearn AI chatbox open/close logic
   const aiMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase().includes('ai'));
   const aiChatbox = document.getElementById('ai-chatbox');
   const closeAiChatbox = document.getElementById('close-ai-chatbox');
+  const aiForm = document.getElementById('ai-chatbox-form');
+  const aiInput = document.getElementById('ai-chatbox-input');
+  const aiMessages = document.getElementById('ai-chatbox-messages');
+  
   if (aiMenuItem && aiChatbox && closeAiChatbox) {
     aiMenuItem.addEventListener('click', function (e) {
       e.preventDefault();
@@ -46,6 +509,64 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     closeAiChatbox.addEventListener('click', function () {
       aiChatbox.style.display = 'none';
+    });
+  }
+
+  // Handle AI chatbox form submission
+  if (aiForm && aiInput && aiMessages) {
+    aiForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const message = aiInput.value.trim();
+      if (message) {
+        // Add user message
+        aiMessages.innerHTML += `
+          <div style="margin-bottom: 10px; text-align: right;">
+            <div style="background: #4c6ddb; color: #fff; padding: 8px 12px; border-radius: 12px; display: inline-block; max-width: 80%;">
+              ${message}
+            </div>
+          </div>
+        `;
+        
+        // Clear input and show loading
+        aiInput.value = '';
+        aiInput.disabled = true;
+        aiInput.placeholder = 'AI is thinking...';
+        
+        // Scroll to bottom
+        aiMessages.scrollTop = aiMessages.scrollHeight;
+        
+        try {
+          // Get current user ID or use a default
+          const { data: { user } } = await supabase.auth.getUser();
+          const userId = user ? user.id : 'anonymous';
+          
+          // Get AI response
+          const aiResponse = await aiService.sendMessage(message, userId, 'learner');
+          
+          // Add AI response
+          aiMessages.innerHTML += `
+            <div style="margin-bottom: 10px;">
+              <div style="background: #f7f9fb; color: #263a7a; padding: 8px 12px; border-radius: 12px; display: inline-block; max-width: 80%;">
+                🤖 ${aiResponse}
+              </div>
+            </div>
+          `;
+        } catch (error) {
+          // Add error message
+          aiMessages.innerHTML += `
+            <div style="margin-bottom: 10px;">
+              <div style="background: #ffebee; color: #c62828; padding: 8px 12px; border-radius: 12px; display: inline-block; max-width: 80%;">
+                🤖 Sorry, I'm having trouble connecting right now. Please try again later.
+              </div>
+            </div>
+          `;
+        } finally {
+          // Re-enable input
+          aiInput.disabled = false;
+          aiInput.placeholder = 'Type your question...';
+          aiMessages.scrollTop = aiMessages.scrollHeight;
+        }
+      }
     });
   }
 
@@ -143,278 +664,61 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // Enrolled Units dynamic content
+  // --- EVENT LISTENERS ---
+
   const enrolledMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase().includes('enrolled'));
-  const dashboardMain = document.querySelector('.dashboard-main');
-  const dashboardContent = dashboardMain ? dashboardMain.innerHTML : '';
-  const enrolledUnitsData = [
-    { code: 'MATH101', name: 'Mathematics 101', instructor: 'Dr. Smith', progress: 75 },
-    { code: 'PHYS201', name: 'Physics 201', instructor: 'Prof. Johnson', progress: 60 },
-    { code: 'CHEM102', name: 'Chemistry 102', instructor: 'Dr. Lee', progress: 90 },
-    { code: 'CS150', name: 'Computer Science 150', instructor: 'Dr. Patel', progress: 40 }
-  ];
-  function renderEnrolledUnits() {
-    if (!dashboardMain) return;
-    dashboardMain.innerHTML = `
-      <div class="enrolled-units-section">
-        <h2>📚 Enrolled Units</h2>
-        <div class="enrolled-units-list">
-          ${enrolledUnitsData.map(unit => `
-            <div class="enrolled-unit-card">
-              <div class="unit-code">${unit.code}</div>
-              <div class="unit-name">${unit.name}</div>
-              <div class="unit-instructor">Instructor: ${unit.instructor}</div>
-              <div class="unit-progress-bar-bg">
-                <div class="unit-progress-bar-fill" style="width: ${unit.progress}%"></div>
-              </div>
-              <div class="unit-progress-label">${unit.progress}% complete</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
-  }
-  if (enrolledMenuItem && dashboardMain) {
+  const timetableMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase().includes('timetable'));
+  const gradingMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase().includes('grading'));
+  const completedMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase().includes('completed'));
+  const certificationsMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase().includes('certification'));
+  const dashboardMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase() === 'dashboard');
+
+  if (enrolledMenuItem) {
     enrolledMenuItem.addEventListener('click', function(e) {
       e.preventDefault();
       renderEnrolledUnits();
+      if (window.userManagement) window.userManagement.setupUserMenu();
+      if (window.userManagement) window.userManagement.setCurrentDashboardContent();
+      attachUserDropdownListeners();
     });
   }
-  // Restore dashboard on Dashboard menu click
-  const dashboardMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase() === 'dashboard');
-  if (dashboardMenuItem && dashboardMain) {
-    dashboardMenuItem.addEventListener('click', function(e) {
-      e.preventDefault();
-      dashboardMain.innerHTML = dashboardContent;
-      // Re-initialize visuals and chatbox logic after restoring dashboard
-      setTimeout(() => {
-        if (typeof window.dispatchEvent === 'function') {
-          window.dispatchEvent(new Event('DOMContentLoaded'));
-        }
-      }, 0);
-    });
-  }
-
-  // Timetable dynamic content
-  const timetableMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase().includes('timetable'));
-  function renderFullTimetable() {
-    if (!dashboardMain) return;
-    dashboardMain.innerHTML = `
-      <div class="timetable-section">
-        <h2>📅 Full Timetable</h2>
-        <div class="timetable-wrapper">
-          <table class="timetable">
-            <thead>
-              <tr>
-                <th>Day</th>
-                <th>Time</th>
-                <th>Unit Name</th>
-                <th>Unit Code</th>
-                <th>Instructor</th>
-                <th>Meeting Link</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${timetableData.map(row => `
-                <tr>
-                  <td>${row.day}</td>
-                  <td>${row.time}</td>
-                  <td>${row.unit}</td>
-                  <td>${row.code}</td>
-                  <td>${row.instructor}</td>
-                  <td><a href="${row.link}" class="meeting-link" target="_blank">Join</a></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-  }
-  if (timetableMenuItem && dashboardMain) {
+  if (timetableMenuItem) {
     timetableMenuItem.addEventListener('click', function(e) {
       e.preventDefault();
       renderFullTimetable();
     });
   }
-
-  // Grading dynamic content
-  const gradingMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase().includes('grading'));
-  const gradingData = [
-    { unit: 'Mathematics 101', code: 'MATH101', quizzes: [
-      { grade: 85, date: '2024-06-01' },
-      { grade: 90, date: '2024-06-08' },
-      { grade: 78, date: '2024-06-15' }
-    ] },
-    { unit: 'Physics 201', code: 'PHYS201', quizzes: [
-      { grade: 70, date: '2024-06-02' },
-      { grade: 75, date: '2024-06-09' },
-      { grade: 80, date: '2024-06-16' }
-    ] },
-    { unit: 'Chemistry 102', code: 'CHEM102', quizzes: [
-      { grade: 92, date: '2024-06-03' },
-      { grade: 88, date: '2024-06-10' },
-      { grade: 95, date: '2024-06-17' }
-    ] },
-    { unit: 'Computer Science 150', code: 'CS150', quizzes: [
-      { grade: 88, date: '2024-06-04' },
-      { grade: 84, date: '2024-06-11' },
-      { grade: 91, date: '2024-06-18' }
-    ] }
-  ];
-  function renderGrading() {
-    if (!dashboardMain) return;
-    let total = 0, count = 0;
-    gradingData.forEach(row => {
-      row.quizzes.forEach(q => { total += q.grade; count++; });
-    });
-    const avg = count ? (total / count).toFixed(2) : 'N/A';
-    dashboardMain.innerHTML = `
-      <div class="grading-section">
-        <h2>📝 Grading</h2>
-        <div class="grading-table-wrapper">
-          <table class="grading-table">
-            <thead>
-              <tr>
-                <th>Unit Name</th>
-                <th>Unit Code</th>
-                <th>Quiz Grades (Date)</th>
-                <th>Unit Average</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${gradingData.map(row => {
-                const unitAvg = row.quizzes.length ? (row.quizzes.reduce((a,b) => a+b.grade,0)/row.quizzes.length).toFixed(2) : 'N/A';
-                return `<tr>
-                  <td>${row.unit}</td>
-                  <td>${row.code}</td>
-                  <td>${row.quizzes.map(q => `<span class='quiz-grade'>${q.grade} <span class='quiz-date'>(${q.date})</span></span>`).join(', ')}</td>
-                  <td>${unitAvg}</td>
-                </tr>`;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
-        <div class="grading-average">Overall Average: <span>${avg}</span></div>
-        <div class="grading-recommendations">
-          ${(() => {
-            const weakUnits = gradingData.filter(row => {
-              if (!row.quizzes.length) return false;
-              const unitAvg = row.quizzes.reduce((a,b) => a+b.grade,0)/row.quizzes.length;
-              return unitAvg < 80;
-            });
-            if (weakUnits.length === 0) {
-              return '<span class="congrats">🎉 Great job! You are performing well in all units.</span>';
-            } else {
-              return '<span class="recommend-title">Recommendations:</span> ' + weakUnits.map(row => `<span class="recommend-unit">${row.unit}</span>`).join(', ') + '<span class="recommend-msg"> — Focus on these areas to improve your performance.</span>';
-            }
-          })()}
-        </div>
-      </div>
-    `;
-  }
-  if (gradingMenuItem && dashboardMain) {
+  if (gradingMenuItem) {
     gradingMenuItem.addEventListener('click', function(e) {
       e.preventDefault();
       renderGrading();
     });
   }
-
-  // Completed Units dynamic content
-  const completedMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase().includes('completed'));
-  const completedUnitsData = [
-    { code: 'ENG101', name: 'English 101', instructor: 'Dr. Adams', completedDate: '2024-05-20' },
-    { code: 'BIO110', name: 'Biology 110', instructor: 'Dr. Green', completedDate: '2024-05-15' }
-  ];
-  function renderCompletedUnits() {
-    if (!dashboardMain) return;
-    dashboardMain.innerHTML = `
-      <div class="completed-units-section">
-        <h2>✅ Completed Units</h2>
-        <div class="completed-units-list">
-          ${completedUnitsData.length === 0 ? '<div class="no-completed">No units completed yet.</div>' :
-            completedUnitsData.map(unit => `
-              <div class="completed-unit-card">
-                <div class="unit-code">${unit.code}</div>
-                <div class="unit-name">${unit.name}</div>
-                <div class="unit-instructor">Instructor: ${unit.instructor}</div>
-                <div class="unit-completed-date">Completed: ${unit.completedDate}</div>
-              </div>
-            `).join('')}
-        </div>
-      </div>
-    `;
-  }
-  if (completedMenuItem && dashboardMain) {
+  if (completedMenuItem) {
     completedMenuItem.addEventListener('click', function(e) {
       e.preventDefault();
       renderCompletedUnits();
     });
   }
-
-  // Certifications dynamic content
-  const certificationsMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase().includes('certification'));
-  // Sample: all units completed at 100% for demonstration
-  const certificationsData = [
-    { course: 'OmniLearn Full Course', date: '2024-06-20', file: 'certificate-omnilearn.pdf' }
-  ];
-  // Simulate completion check: all units at 100%
-  const allUnitsCompleted = true; // Set to false to test the incomplete state
-  function renderCertifications() {
-    if (!dashboardMain) return;
-    dashboardMain.innerHTML = `
-      <div class="certifications-section">
-        <h2>🎓 Certifications</h2>
-        <div class="certifications-list">
-          ${allUnitsCompleted && certificationsData.length > 0 ?
-            certificationsData.map(cert => `
-              <div class="cert-card">
-                <div class="cert-title">${cert.course}</div>
-                <div class="cert-date">Awarded: ${cert.date}</div>
-                <a href="${cert.file}" class="cert-download" download>Download Certificate</a>
-              </div>
-            `).join('') :
-            '<div class="no-cert">Certificates are only available when all units are completed at 100%.</div>'}
-        </div>
-      </div>
-    `;
-  }
-  if (certificationsMenuItem && dashboardMain) {
+  if (certificationsMenuItem) {
     certificationsMenuItem.addEventListener('click', function(e) {
       e.preventDefault();
       renderCertifications();
     });
   }
+  if (dashboardMenuItem) {
+    dashboardMenuItem.addEventListener('click', function(e) {
+      e.preventDefault();
+      renderDashboard();
+      if (window.userManagement) window.userManagement.setupUserMenu();
+      if (window.userManagement) window.userManagement.setCurrentDashboardContent();
+      attachUserDropdownListeners();
+    });
+  }
 
   // Notice Board dynamic content
   const noticeMenuItem = Array.from(document.querySelectorAll('.side-menu a')).find(a => a.textContent.trim().toLowerCase().includes('notice'));
-  const noticeData = [
-    { sender: 'Admin', date: '2024-06-18', title: 'System Maintenance', message: 'The platform will be down for maintenance on June 20th from 2am to 4am.' },
-    { sender: 'Trainer', date: '2024-06-17', title: 'Assignment Reminder', message: 'Don’t forget to submit your Physics assignment by Friday.' },
-    { sender: 'Admin', date: '2024-06-16', title: 'Welcome!', message: 'Welcome to the new semester. Check your timetable for updates.' }
-  ];
-  function renderNoticeBoard() {
-    if (!dashboardMain) return;
-    dashboardMain.innerHTML = `
-      <div class="notice-board-section">
-        <h2>📢 Notice Board</h2>
-        <div class="notice-list">
-          ${noticeData.length === 0 ? '<div class="no-notice">No notices at this time.</div>' :
-            noticeData.map(notice => `
-              <div class="notice-card ${notice.sender.toLowerCase()}">
-                <div class="notice-header">
-                  <span class="notice-sender">${notice.sender}</span>
-                  <span class="notice-date">${notice.date}</span>
-                </div>
-                <div class="notice-title">${notice.title}</div>
-                <div class="notice-message">${notice.message}</div>
-              </div>
-            `).join('')}
-        </div>
-      </div>
-    `;
-  }
-  if (noticeMenuItem && dashboardMain) {
+  if (noticeMenuItem) {
     noticeMenuItem.addEventListener('click', function(e) {
       e.preventDefault();
       renderNoticeBoard();
@@ -429,4 +733,5 @@ document.addEventListener('DOMContentLoaded', function () {
       this.classList.add('active');
     });
   });
+  attachUserDropdownListeners();
 }); 

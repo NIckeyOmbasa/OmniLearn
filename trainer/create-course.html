@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create New Course - OmniLearn</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="trainer.css" />
+
+  <style>
+    .create-course-container {
+      max-width: 800px;
+      margin: 100px auto 40px auto;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(76,109,219,0.10);
+      padding: 40px 32px;
+      font-family: 'Montserrat', Arial, sans-serif;
+    }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { font-weight: 600; color: #4c6ddb; display: block; margin-bottom: 6px; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; padding: 10px; border-radius: 8px; border: 1.5px solid #e6eefd; font-size: 1rem; margin-bottom: 4px;
+    }
+    .form-group input[type="file"] { border: none; }
+    .outline-section { margin-bottom: 18px; }
+    .topic-block { background: #f7f9fb; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+    .topic-title { font-weight: 600; color: #263a7a; }
+    .subtopic-list { margin-left: 18px; }
+    .add-btn, .remove-btn { background: #4c6ddb; color: #fff; border: none; border-radius: 6px; padding: 4px 12px; margin-left: 8px; cursor: pointer; font-size: 0.95rem; }
+    .add-btn:hover, .remove-btn:hover { background: #7ebe91; }
+    .submit-btn { margin-top: 18px; }
+    .back-link { color: #4c6ddb; text-decoration: none; font-weight: 600; margin-bottom: 18px; display: inline-block; }
+    .back-link:hover { color: #7ebe91; }
+    .file-preview { margin-top: 6px; font-size: 0.95rem; color: #7ebe91; }
+    .editor-toolbar {
+      margin: 6px 0 4px 0;
+      display: flex;
+      gap: 6px;
+    }
+    .editor-toolbar button {
+      background: #e6eefd;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      color: #4c6ddb;
+      transition: background 0.2s;
+    }
+    .editor-toolbar button:hover {
+      background: #7ebe91;
+      color: #fff;
+    }
+    .contenteditable[contenteditable="true"] {
+      min-height: 60px;
+      border: 1.5px solid #e6eefd;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 1rem;
+      margin-bottom: 8px;
+      outline: none;
+      background: #f7f9fb;
+    }
+    .contenteditable[contenteditable="true"]:focus {
+      border: 1.5px solid #4c6ddb;
+      background: #fff;
+    }
+       .floating-ai-icon {
+     position: fixed;
+     bottom: 32px;
+     right: 32px;
+     width: 60px;
+     height: 60px;
+     background: #4c6ddb;
+     color: #fff;
+     border-radius: 50%;
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     justify-content: center;
+     cursor: pointer;
+     box-shadow: 0 4px 16px rgba(76, 109, 219, 0.3);
+     transition: all 0.3s ease;
+     z-index: 1000;
+     font-size: 0.8rem;
+     font-weight: 600;
+     overflow: hidden;
+   }
+   .ai-emoji {
+     font-size: 1.5rem;
+     transition: all 0.3s ease;
+   }
+   .ai-text {
+     font-size: 0.6rem;
+     opacity: 0;
+     transform: translateY(10px);
+     transition: all 0.3s ease;
+     white-space: nowrap;
+     text-align: center;
+     line-height: 1;
+   }
+       .floating-ai-icon:hover {
+     background: #7ebe91;
+     transform: scale(1.1);
+     box-shadow: 0 6px 20px rgba(76, 109, 219, 0.4);
+     width: 120px;
+     height: 80px;
+     border-radius: 40px;
+   }
+   .floating-ai-icon:hover .ai-emoji {
+     font-size: 1.2rem;
+     margin-bottom: 4px;
+   }
+   .floating-ai-icon:hover .ai-text {
+     opacity: 1;
+     transform: translateY(0);
+   }
+    .floating-ai-icon:active {
+      transform: scale(0.95);
+    }
+    .ai-chatbox {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      width: 340px;
+      max-width: 95vw;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(76,109,219,0.18);
+      display: flex;
+      flex-direction: column;
+      z-index: 9999;
+      font-family: 'Montserrat', Arial, sans-serif;
+      overflow: hidden;
+      min-height: 420px;
+      max-height: 80vh;
+    }
+    .ai-chatbox-header {
+      background: #4c6ddb;
+      color: #fff;
+      padding: 18px 20px 10px 20px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .close-chatbox {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 1.5rem;
+      cursor: pointer;
+      margin-left: 12px;
+      font-weight: 700;
+      transition: color 0.2s;
+    }
+    .close-chatbox:hover {
+      color: #ffb343;
+    }
+    .ai-chatbox-messages {
+      flex: 1;
+      padding: 16px 20px;
+      overflow-y: auto;
+      background: #f7f9fb;
+      font-size: 1rem;
+      color: #263a7a;
+    }
+    .ai-chatbox-input {
+      display: flex;
+      border-top: 1px solid #e6eefd;
+      background: #fff;
+      padding: 12px 16px;
+      align-items: center;
+    }
+    .ai-chatbox-input input[type="text"] {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #e6eefd;
+      margin-right: 8px;
+      color: #263a7a;
+      transition: background 0.2s;
+    }
+    .ai-chatbox-input input[type="text"]:focus {
+      background: #fff;
+      border: 1.5px solid #4c6ddb;
+    }
+    .ai-chatbox-input button {
+      background: #4c6ddb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .ai-chatbox-input button:hover {
+      background: #7ebe91;
+    }
+    .ai-powered-by {
+      font-size: 0.85rem;
+      color: #e6eefd;
+      font-weight: 400;
+    }
+    @media (max-width: 600px) {
+      .floating-ai-icon {
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+      }
+      .ai-chatbox {
+        right: 4vw;
+        left: 4vw;
+        width: 92vw;
+        min-width: unset;
+        max-width: 98vw;
+        bottom: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-link">&larr; Back to Dashboard</a>
+  <div class="create-course-container">
+    <h1>Create New Course</h1>
+    <form id="create-course-form" autocomplete="off">
+      <div class="form-group">
+        <label for="course-title">Course Title</label>
+        <input type="text" id="course-title" name="title" required />
+      </div>
+      <div class="form-group">
+        <label for="course-description">Description</label>
+        <textarea id="course-description" name="description" rows="3" required></textarea>
+      </div>
+      <div class="outline-section">
+        <label>Course Outline</label>
+        <div id="outline-list"></div>
+        <button type="button" class="add-btn" id="add-topic-btn">+ Add Topic</button>
+      </div>
+      <div class="form-group">
+        <label for="course-image">Course Cover Image</label>
+        <input type="file" id="course-image" accept="image/*" />
+        <div class="file-preview" id="image-preview"></div>
+      </div>
+      <div class="form-group">
+        <label for="course-doc">Upload Document (PDF, DOCX, etc.)</label>
+        <input type="file" id="course-doc" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt" />
+        <div class="file-preview" id="doc-preview"></div>
+      </div>
+      <div class="form-group">
+        <label for="course-video">Embed Video (YouTube/Vimeo link or upload)</label>
+        <input type="url" id="course-video" placeholder="Paste video link here" />
+        <input type="file" id="video-upload" accept="video/*" style="margin-top: 8px;" />
+        <div class="file-preview" id="video-preview"></div>
+      </div>
+      <div id="course-message" style="color: red; min-height: 1.5em;"></div>
+      <button type="submit" class="auth-btn submit-btn">Create Course</button>
+    </form>
+  </div>
+ 
+   <!-- Floating AI Icon -->
+  <div id="floating-ai-icon" class="floating-ai-icon">
+    <span class="ai-emoji">🤖</span>
+    <span class="ai-text">OmniLearn AI</span>
+  </div>
+ 
+ <!-- AI Chatbox -->
+ <div id="ai-chatbox" class="ai-chatbox" style="display: none;">
+   <div class="ai-chatbox-header">
+     <span>
+       🤖 OmniLearn AI
+       <br />
+       <span class="ai-powered-by">Powered by OpenAI</span>
+     </span>
+     <button id="close-ai-chatbox" class="close-chatbox">&times;</button>
+   </div>
+   <div class="ai-chatbox-messages" id="ai-chatbox-messages">
+     <!-- Messages will appear here -->
+   </div>
+   <form class="ai-chatbox-input" id="ai-chatbox-form" autocomplete="off">
+     <input type="text" id="ai-chatbox-input" placeholder="Type your question..." autocomplete="off" />
+     <button type="submit">Send</button>
+   </form>
+ </div>
+ 
+  <template id="topic-template">
+    <div class="topic-block">
+      <div>
+        <input type="text" class="topic-title" placeholder="Topic Title" style="width: 70%; margin-bottom: 6px;" />
+        <button type="button" class="remove-btn">Remove Topic</button>
+      </div>
+      <div class="editor-toolbar">
+        <button type="button" data-cmd="bold"><b>B</b></button>
+        <button type="button" data-cmd="italic"><i>I</i></button>
+        <button type="button" data-cmd="underline"><u>U</u></button>
+        <button type="button" data-cmd="subscript">X<sub>2</sub></button>
+        <button type="button" data-cmd="superscript">X<sup>2</sup></button>
+      </div>
+      <div class="topic-content contenteditable" contenteditable="true" placeholder="Topic Content..."></div>
+      <div class="subtopic-list"></div>
+      <button type="button" class="add-btn">+ Add Subtopic</button>
+    </div>
+  </template>
+  <template id="subtopic-template">
+    <div class="subtopic-block">
+      <input type="text" class="subtopic-title" placeholder="Subtopic" style="width: 60%; margin-bottom: 4px;" />
+      <button type="button" class="remove-btn">Remove</button>
+      <div class="editor-toolbar">
+        <button type="button" data-cmd="bold"><b>B</b></button>
+        <button type="button" data-cmd="italic"><i>I</i></button>
+        <button type="button" data-cmd="underline"><u>U</u></button>
+        <button type="button" data-cmd="subscript">X<sub>2</sub></button>
+        <button type="button" data-cmd="superscript">X<sup>2</sup></button>
+      </div>
+      <div class="subtopic-content contenteditable" contenteditable="true" placeholder="Subtopic Content..."></div>
+    </div>
+  </template>
+  <script type="module" src="create-course.js"></script>
+</body>
+</html> 

@@ -8,12 +8,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;400&display=swap" rel="stylesheet">
+
 </head>
 <body>
+  <!-- <div class="landing-header-logo">
+    <img src="logo.png" alt="OmniLearn Logo" />
+    <span class="landing-logo-text">OmniLearn</span>
+  </div> -->
   <div class="container">
     <div class="left-section">
       <div class="logo-tagline">
-        <img src="logo.png" alt="OmniLearn Logo" class="logo" />
+        <img src="logo.svg" alt="OmniLearn Logo" class="logo" />
         <h1>OmniLearn</h1>
         <p class="tagline">The Future of Smart, Personalized Learning</p>
       </div>
@@ -34,13 +39,86 @@
       </div>
     </div>
     <div class="right-section">
-      <div class="auth-panel">
-        <h2>Sign In / Register</h2>
-        <p>Authentication coming soon (Supabase integration)</p>
-        <div class="role-links">
-          <a href="learner/">Learner</a> |
-          <a href="trainer/">Trainer</a> |
-          <a href="admin/">Admin</a>
+      <div class="right-flex-col">
+        <div class="right-logo-area">
+          <img src="logo.svg" alt="OmniLearn Logo" class="right-logo-img" />
+        </div>
+        <div class="right-form-area">
+          <div class="auth-panel">
+            <div class="auth-tabs">
+              <button class="auth-tab active" id="sign-in-tab" type="button">Sign In</button>
+              <button class="auth-tab" id="sign-up-tab" type="button">Join Us</button>
+            </div>
+            <form id="sign-in-form" class="auth-form" autocomplete="off">
+              <h2>Sign In</h2>
+              <div class="form-group">
+                <label for="signin-email">Email</label>
+                <input type="email" id="signin-email" name="email" required autocomplete="username" />
+              </div>
+              <div class="form-group password-group">
+                <label for="signin-password">Password</label>
+                <div class="password-wrapper">
+                  <input type="password" id="signin-password" name="password" required autocomplete="current-password" />
+                  <button type="button" class="toggle-password" tabindex="-1" aria-label="Show/Hide password">
+                    <svg class="eye-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#7ebe91" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" class="auth-btn">Sign In</button>
+            </form>
+            <form id="sign-up-form" class="auth-form" style="display:none;" autocomplete="off">
+              <h2>Join Us</h2>
+              <div class="form-group">
+                <label for="signup-name">Full Name</label>
+                <input type="text" id="signup-name" name="name" required />
+              </div>
+              <div class="form-group">
+                <label for="signup-email">Email</label>
+                <input type="email" id="signup-email" name="email" required autocomplete="username" />
+              </div>
+              <div class="form-group">
+                <label for="signup-role">Role</label>
+                <select id="signup-role" name="role" required>
+                  <option value="learner">Learner</option>
+                  <option value="trainer">Trainer</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div class="form-group password-group">
+                <label for="signup-password">Password</label>
+                <div class="password-wrapper">
+                  <input type="password" id="signup-password" name="password" required autocomplete="new-password" />
+                  <button type="button" class="toggle-password" tabindex="-1" aria-label="Show/Hide password">
+                    <svg class="eye-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#7ebe91" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="form-group password-group">
+                <label for="signup-confirm-password">Confirm Password</label>
+                <div class="password-wrapper">
+                  <input type="password" id="signup-confirm-password" name="confirm-password" required autocomplete="new-password" />
+                  <button type="button" class="toggle-password" tabindex="-1" aria-label="Show/Hide password">
+                    <svg class="eye-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#7ebe91" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" class="auth-btn">Join Us</button>
+            </form>
+            <div class="role-links">
+              <!-- Role links removed for cleaner authentication UI -->
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -60,5 +138,123 @@
     current = (current + 1) % features.length;
     showFeature(current);
   }, 5000);
+</script>
+<script type="module">
+import { supabase } from './supabase.js';
+import { alertService } from './alert-service.js';
+
+// --- Sign Up Logic ---
+document.getElementById('sign-up-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const confirmPassword = document.getElementById('signup-confirm-password').value;
+  const role = document.getElementById('signup-role').value;
+  if (password !== confirmPassword) {
+    alertService.error('Password Mismatch', 'Passwords do not match. Please try again.');
+    return;
+  }
+  // Show loading alert
+  const loadingId = alertService.loading('Creating Account', 'Please wait while we create your account...');
+  
+  // Sign up with Supabase Auth
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) {
+    alertService.updateLoading(loadingId, 'error', 'Sign Up Failed', error.message);
+    return;
+  }
+  // Insert profile with role
+  const user = data.user || (data.session && data.session.user);
+  if (user) {
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert([{ id: user.id, full_name: name, role }]);
+    if (profileError) {
+      alertService.updateLoading(loadingId, 'error', 'Profile Creation Failed', profileError.message);
+      return;
+    }
+    alertService.updateLoading(loadingId, 'success', 'Account Created!', 'Please check your email to confirm your account.');
+  } else {
+    alertService.updateLoading(loadingId, 'success', 'Account Created!', 'Please check your email to confirm your account.');
+  }
+});
+
+// --- Sign In Logic ---
+document.getElementById('sign-in-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const email = document.getElementById('signin-email').value.trim();
+  const password = document.getElementById('signin-password').value;
+  
+  // Show loading alert
+  const loadingId = alertService.loading('Signing In', 'Please wait while we authenticate you...');
+  
+  // Sign in with Supabase Auth
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    alertService.updateLoading(loadingId, 'error', 'Sign In Failed', error.message);
+    return;
+  }
+  const user = data.user;
+  // Fetch profile for role
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (profileError || !profile) {
+    alertService.updateLoading(loadingId, 'error', 'Profile Error', 'Could not fetch user profile.');
+    return;
+  }
+  
+  alertService.updateLoading(loadingId, 'success', 'Welcome Back!', 'Redirecting to your dashboard...');
+  
+  // Redirect based on role
+  setTimeout(() => {
+    if (profile.role === 'learner') {
+      window.location.href = './learner/';
+    } else if (profile.role === 'trainer') {
+      window.location.href = './trainer/';
+    } else if (profile.role === 'admin') {
+      window.location.href = './admin/';
+    } else {
+      alertService.error('Unknown Role', 'Your user role is not recognized. Please contact support.');
+    }
+  }, 1500);
+});
+</script>
+<script>
+// Auth tab switching logic
+document.addEventListener('DOMContentLoaded', function () {
+  const signInTab = document.getElementById('sign-in-tab');
+  const signUpTab = document.getElementById('sign-up-tab');
+  const signInForm = document.getElementById('sign-in-form');
+  const signUpForm = document.getElementById('sign-up-form');
+  signInTab.addEventListener('click', function () {
+    signInTab.classList.add('active');
+    signUpTab.classList.remove('active');
+    signInForm.style.display = '';
+    signUpForm.style.display = 'none';
+  });
+  signUpTab.addEventListener('click', function () {
+    signUpTab.classList.add('active');
+    signInTab.classList.remove('active');
+    signUpForm.style.display = '';
+    signInForm.style.display = 'none';
+  });
+});
+// Show/hide password logic
+document.querySelectorAll('.toggle-password').forEach(btn => {
+  btn.addEventListener('click', function () {
+    const input = this.parentElement.querySelector('input');
+    if (input.type === 'password') {
+      input.type = 'text';
+      this.querySelector('svg').innerHTML = '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.81 21.81 0 0 1 5.06-6.06M1 1l22 22"/><path d="M9.53 9.53A3 3 0 0 0 12 15a3 3 0 0 0 2.47-5.47"/>';
+    } else {
+      input.type = 'password';
+      this.querySelector('svg').innerHTML = '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>';
+    }
+  });
+});
 </script>
 </html> 

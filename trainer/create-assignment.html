@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create New Assignment - OmniLearn</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="trainer.css" />
+
+  <style>
+    .create-assignment-container {
+      max-width: 800px;
+      margin: 100px auto 40px auto;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(76,109,219,0.10);
+      padding: 40px 32px;
+      font-family: 'Montserrat', Arial, sans-serif;
+    }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { font-weight: 600; color: #4c6ddb; display: block; margin-bottom: 6px; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; padding: 10px; border-radius: 8px; border: 1.5px solid #e6eefd; font-size: 1rem; margin-bottom: 4px;
+    }
+    .form-group input[type="file"] { border: none; }
+    .form-group input[type="datetime-local"] { width: auto; }
+    .editor-toolbar {
+      margin: 6px 0 4px 0;
+      display: flex;
+      gap: 6px;
+      background: #f8f9fa;
+      padding: 8px 12px;
+      border-radius: 8px 8px 0 0;
+      border: 1.5px solid #e6eefd;
+      border-bottom: none;
+    }
+    .editor-toolbar button {
+      background: #e6eefd;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      color: #4c6ddb;
+      transition: background 0.2s;
+      min-width: 32px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .editor-toolbar button:hover {
+      background: #7ebe91;
+      color: #fff;
+    }
+    .editor-toolbar button:active {
+      background: #4c6ddb;
+      color: #fff;
+    }
+    .contenteditable[contenteditable="true"] {
+      min-height: 120px;
+      border: 1.5px solid #e6eefd;
+      border-radius: 0 0 8px 8px;
+      padding: 8px;
+      font-size: 1rem;
+      margin-bottom: 8px;
+      outline: none;
+      background: #f7f9fb;
+      line-height: 1.6;
+      font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    }
+    .contenteditable[contenteditable="true"]:focus {
+      border: 1.5px solid #4c6ddb;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(76, 109, 219, 0.1);
+    }
+    .contenteditable[contenteditable="true"]:empty:before {
+      content: attr(placeholder);
+      color: #6c757d;
+      font-style: italic;
+    }
+    .contenteditable[contenteditable="true"] ul,
+    .contenteditable[contenteditable="true"] ol {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+    .contenteditable[contenteditable="true"] li {
+      margin: 4px 0;
+    }
+    .contenteditable[contenteditable="true"] p {
+      margin: 8px 0;
+    }
+    .contenteditable[contenteditable="true"] strong {
+      color: #4c6ddb;
+    }
+    .contenteditable[contenteditable="true"] em {
+      color: #7ebe91;
+    }
+    .back-link { color: #4c6ddb; text-decoration: none; font-weight: 600; margin-bottom: 18px; display: inline-block; }
+    .back-link:hover { color: #7ebe91; }
+    .file-preview { margin-top: 6px; font-size: 0.95rem; color: #7ebe91; }
+    .assignment-type-group {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+    .assignment-type-group input[type="radio"] {
+      width: auto;
+      margin-right: 5px;
+    }
+    .assignment-type-group label {
+      display: inline;
+      margin-right: 15px;
+    }
+    .question-block {
+      background: #f7f9fb;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 15px;
+      border-left: 4px solid #4c6ddb;
+    }
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .question-number {
+      font-weight: 600;
+      color: #4c6ddb;
+      font-size: 1.1rem;
+    }
+    .question-input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1.5px solid #e6eefd;
+      font-size: 1rem;
+      margin-bottom: 15px;
+    }
+    .options-container {
+      margin-bottom: 15px;
+    }
+    .option-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .option-input {
+      flex: 1;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1.5px solid #e6eefd;
+      font-size: 0.95rem;
+    }
+    .correct-answer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      padding: 10px;
+      background: #e6eefd;
+      border-radius: 6px;
+    }
+    .correct-answer select {
+      padding: 5px;
+      border-radius: 4px;
+      border: 1px solid #4c6ddb;
+    }
+    .instructions-content pre code {
+      background: none;
+      padding: 0;
+      color: #263a7a;
+    }
+       .floating-ai-icon {
+     position: fixed;
+     bottom: 32px;
+     right: 32px;
+     width: 60px;
+     height: 60px;
+     background: #4c6ddb;
+     color: #fff;
+     border-radius: 50%;
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     justify-content: center;
+     cursor: pointer;
+     box-shadow: 0 4px 16px rgba(76, 109, 219, 0.3);
+     transition: all 0.3s ease;
+     z-index: 1000;
+     font-size: 0.8rem;
+     font-weight: 600;
+     overflow: hidden;
+   }
+   .ai-emoji {
+     font-size: 1.5rem;
+     transition: all 0.3s ease;
+   }
+   .ai-text {
+     font-size: 0.6rem;
+     opacity: 0;
+     transform: translateY(10px);
+     transition: all 0.3s ease;
+     white-space: nowrap;
+     text-align: center;
+     line-height: 1;
+   }
+       .floating-ai-icon:hover {
+     background: #7ebe91;
+     transform: scale(1.1);
+     box-shadow: 0 6px 20px rgba(76, 109, 219, 0.4);
+     width: 120px;
+     height: 80px;
+     border-radius: 40px;
+   }
+   .floating-ai-icon:hover .ai-emoji {
+     font-size: 1.2rem;
+     margin-bottom: 4px;
+   }
+   .floating-ai-icon:hover .ai-text {
+     opacity: 1;
+     transform: translateY(0);
+   }
+    .floating-ai-icon:active {
+      transform: scale(0.95);
+    }
+    .ai-chatbox {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      width: 340px;
+      max-width: 95vw;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(76,109,219,0.18);
+      display: flex;
+      flex-direction: column;
+      z-index: 9999;
+      font-family: 'Montserrat', Arial, sans-serif;
+      overflow: hidden;
+      min-height: 420px;
+      max-height: 80vh;
+    }
+    .ai-chatbox-header {
+      background: #4c6ddb;
+      color: #fff;
+      padding: 18px 20px 10px 20px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .close-chatbox {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 1.5rem;
+      cursor: pointer;
+      margin-left: 12px;
+      font-weight: 700;
+      transition: color 0.2s;
+    }
+    .close-chatbox:hover {
+      color: #ffb343;
+    }
+    .ai-chatbox-messages {
+      flex: 1;
+      padding: 16px 20px;
+      overflow-y: auto;
+      background: #f7f9fb;
+      font-size: 1rem;
+      color: #263a7a;
+    }
+    .ai-chatbox-input {
+      display: flex;
+      border-top: 1px solid #e6eefd;
+      background: #fff;
+      padding: 12px 16px;
+      align-items: center;
+    }
+    .ai-chatbox-input input[type="text"] {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #e6eefd;
+      margin-right: 8px;
+      color: #263a7a;
+      transition: background 0.2s;
+    }
+    .ai-chatbox-input input[type="text"]:focus {
+      background: #fff;
+      border: 1.5px solid #4c6ddb;
+    }
+    .ai-chatbox-input button {
+      background: #4c6ddb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .ai-chatbox-input button:hover {
+      background: #7ebe91;
+    }
+    .ai-powered-by {
+      font-size: 0.85rem;
+      color: #e6eefd;
+      font-weight: 400;
+    }
+    @media (max-width: 600px) {
+      .floating-ai-icon {
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+      }
+      .ai-chatbox {
+        right: 4vw;
+        left: 4vw;
+        width: 92vw;
+        min-width: unset;
+        max-width: 98vw;
+        bottom: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-link">&larr; Back to Dashboard</a>
+  <div class="create-assignment-container">
+    <h1>Create New Assignment</h1>
+    <form id="create-assignment-form" autocomplete="off">
+      <div class="form-group">
+        <label for="assignment-title">Assignment Title</label>
+        <input type="text" id="assignment-title" name="title" required />
+      </div>
+      
+      <div class="form-group">
+        <label for="assignment-course">Course</label>
+        <select id="assignment-course" name="course_id" required>
+          <option value="">Select a course...</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="assignment-description">Description</label>
+        <textarea id="assignment-description" name="description" rows="3" required></textarea>
+      </div>
+      
+      <div class="form-group">
+        <label>Assignment Type</label>
+        <div class="assignment-type-group">
+          <input type="radio" id="type-quiz" name="type" value="quiz" required>
+          <label for="type-quiz">Quiz</label>
+          <input type="radio" id="type-essay" name="type" value="essay">
+          <label for="type-essay">Essay</label>
+          <input type="radio" id="type-project" name="type" value="project">
+          <label for="type-project">Project</label>
+          <input type="radio" id="type-presentation" name="type" value="presentation">
+          <label for="type-presentation">Presentation</label>
+        </div>
+      </div>
+      
+      <!-- Quiz Builder Section -->
+      <div id="quiz-builder" style="display: none; margin-bottom: 20px;">
+        <h3 style="color: #4c6ddb; margin-bottom: 15px;">📝 Quiz Questions</h3>
+        <div id="questions-container">
+          <!-- Questions will be added here dynamically -->
+        </div>
+        <button type="button" id="add-question-btn" class="add-btn" style="margin-top: 10px;">+ Add Question</button>
+      </div>
+      
+      <div class="form-group">
+        <label for="assignment-due-date">Due Date</label>
+        <input type="datetime-local" id="assignment-due-date" name="due_date" required />
+      </div>
+      
+      <div class="form-group">
+        <label for="assignment-points">Total Points</label>
+        <input type="number" id="assignment-points" name="points" min="1" max="100" value="10" required />
+      </div>
+      
+      <div class="form-group">
+        <label>Assignment Instructions</label>
+        <div class="editor-toolbar">
+          <button type="button" data-cmd="bold"><b>B</b></button>
+          <button type="button" data-cmd="italic"><i>I</i></button>
+          <button type="button" data-cmd="underline"><u>U</u></button>
+          <button type="button" data-cmd="insertUnorderedList">• List</button>
+          <button type="button" data-cmd="insertOrderedList">1. List</button>
+        </div>
+        <div id="assignment-instructions" class="contenteditable" contenteditable="true" placeholder="Enter assignment instructions..."></div>
+      </div>
+      
+      <div class="form-group">
+        <label for="assignment-files">Upload Assignment Files (PDF, DOCX, etc.)</label>
+        <input type="file" id="assignment-files" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip,.rar" multiple />
+        <div class="file-preview" id="files-preview"></div>
+      </div>
+      
+      <div id="assignment-message" style="color: red; min-height: 1.5em;"></div>
+      <button type="submit" class="auth-btn">Create Assignment</button>
+    </form>
+  </div>
+ 
+   <!-- Floating AI Icon -->
+  <div id="floating-ai-icon" class="floating-ai-icon">
+    <span class="ai-emoji">🤖</span>
+    <span class="ai-text">OmniLearn AI</span>
+  </div>
+ 
+ <!-- AI Chatbox -->
+ <div id="ai-chatbox" class="ai-chatbox" style="display: none;">
+   <div class="ai-chatbox-header">
+     <span>
+       🤖 OmniLearn AI
+       <br />
+       <span class="ai-powered-by">Powered by OpenAI</span>
+     </span>
+     <button id="close-ai-chatbox" class="close-chatbox">&times;</button>
+   </div>
+   <div class="ai-chatbox-messages" id="ai-chatbox-messages">
+     <!-- Messages will appear here -->
+   </div>
+   <form class="ai-chatbox-input" id="ai-chatbox-form" autocomplete="off">
+     <input type="text" id="ai-chatbox-input" placeholder="Type your question..." autocomplete="off" />
+     <button type="submit">Send</button>
+   </form>
+ </div>
+ 
+  <script type="module" src="create-assignment.js"></script>
+</body>
+</html> 

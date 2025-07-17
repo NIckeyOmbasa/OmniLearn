@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alert System Test - OmniLearn</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .test-container {
+      max-width: 800px;
+      margin: 100px auto;
+      padding: 40px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    .test-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    
+    .test-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .test-btn-success {
+      background: #10b981;
+      color: white;
+    }
+    
+    .test-btn-error {
+      background: #ef4444;
+      color: white;
+    }
+    
+    .test-btn-warning {
+      background: #f59e0b;
+      color: white;
+    }
+    
+    .test-btn-info {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .test-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .test-btn:active {
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>🚀 OmniLearn Alert System Test</h1>
+    <p>Click the buttons below to test different types of alerts with timeouts:</p>
+    
+    <div class="test-buttons">
+      <button class="test-btn test-btn-success" onclick="testSuccess()">
+        Success Alert (5s)
+      </button>
+      
+      <button class="test-btn test-btn-error" onclick="testError()">
+        Error Alert (7s)
+      </button>
+      
+      <button class="test-btn test-btn-warning" onclick="testWarning()">
+        Warning Alert (6s)
+      </button>
+      
+      <button class="test-btn test-btn-info" onclick="testInfo()">
+        Info Alert (5s)
+      </button>
+      
+      <button class="test-btn test-btn-info" onclick="testLoading()">
+        Loading → Success
+      </button>
+      
+      <button class="test-btn test-btn-error" onclick="testLoadingError()">
+        Loading → Error
+      </button>
+      
+      <button class="test-btn test-btn-warning" onclick="testMultiple()">
+        Multiple Alerts
+      </button>
+      
+      <button class="test-btn test-btn-info" onclick="testCloseAll()">
+        Close All Alerts
+      </button>
+    </div>
+    
+    <div style="margin-top: 40px; padding: 20px; background: #f7f9fb; border-radius: 8px;">
+      <h3>Alert Features:</h3>
+      <ul>
+        <li>✅ Modern design with smooth animations</li>
+        <li>✅ Automatic timeout with progress bar</li>
+        <li>✅ Manual close button</li>
+        <li>✅ Multiple alert types (success, error, warning, info)</li>
+        <li>✅ Loading state with update capability</li>
+        <li>✅ Mobile responsive</li>
+        <li>✅ Theme-aligned colors and styling</li>
+        <li>✅ Stack multiple alerts</li>
+      </ul>
+    </div>
+  </div>
+
+  <script type="module">
+    import { alertService } from './alert-service.js';
+    
+    // Make alertService available globally for testing
+    window.alertService = alertService;
+    
+    // Test functions
+    window.testSuccess = function() {
+      alertService.success('Success!', 'This is a success message with a 5-second timeout.');
+    };
+    
+    window.testError = function() {
+      alertService.error('Error!', 'This is an error message with a 7-second timeout.');
+    };
+    
+    window.testWarning = function() {
+      alertService.warning('Warning!', 'This is a warning message with a 6-second timeout.');
+    };
+    
+    window.testInfo = function() {
+      alertService.info('Information', 'This is an info message with a 5-second timeout.');
+    };
+    
+    window.testLoading = function() {
+      const loadingId = alertService.loading('Processing...', 'Please wait while we process your request.');
+      
+      // Simulate async operation
+      setTimeout(() => {
+        alertService.updateLoading(loadingId, 'success', 'Completed!', 'Your request has been processed successfully.');
+      }, 3000);
+    };
+    
+    window.testLoadingError = function() {
+      const loadingId = alertService.loading('Processing...', 'Please wait while we process your request.');
+      
+      // Simulate async operation that fails
+      setTimeout(() => {
+        alertService.updateLoading(loadingId, 'error', 'Failed!', 'Something went wrong. Please try again.');
+      }, 3000);
+    };
+    
+    window.testMultiple = function() {
+      alertService.info('First Alert', 'This is the first alert.');
+      setTimeout(() => alertService.success('Second Alert', 'This is the second alert.'), 500);
+      setTimeout(() => alertService.warning('Third Alert', 'This is the third alert.'), 1000);
+      setTimeout(() => alertService.error('Fourth Alert', 'This is the fourth alert.'), 1500);
+    };
+    
+    window.testCloseAll = function() {
+      alertService.closeAll();
+    };
+  </script>
+</body>
+</html> 

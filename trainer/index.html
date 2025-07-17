@@ -3,9 +3,85 @@
 <head>
   <meta charset="UTF-8" />
   <title>Trainer Dashboard - OmniLearn</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="trainer.css" />
+
 </head>
 <body>
-  <h1>Trainer Dashboard (Coming Soon)</h1>
-  <a href="../index.html">Back to Home</a>
+  <div class="dashboard-header">
+    <a href="#" class="header-logo">
+              <img src="../logo.svg" alt="OmniLearn Logo" /> OmniLearn
+    </a>
+    <div class="user-menu" id="user-menu">
+      <span class="user-greeting">Hi <span id="user-name">Trainer</span></span>
+      <span class="user-icon" id="user-icon" tabindex="0" aria-label="User menu">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="8" r="4" fill="#4c6ddb"/>
+          <path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="#4c6ddb"/>
+        </svg>
+      </span>
+      <div class="profile-submenu" id="profile-submenu">
+        <a href="#" id="edit-profile">Edit Profile</a>
+        <a href="#" id="preferences">Preferences</a>
+        <a href="#" id="logout">Logout</a>
+      </div>
+    </div>
+  </div>
+  <div class="learner-layout">
+    <nav class="side-menu">
+      <ul>
+        <li><a href="#" class="active">Dashboard</a></li>
+        <li><a href="#">Courses & Assignments</a></li>
+        <li><a href="#">Learner Progress</a></li>
+        <li><a href="#">Notice Board</a></li>
+        <li><a href="#">Live Classes</a></li>
+        <li><a href="#">OmniLearn AI</a></li>
+      </ul>
+    </nav>
+    <main class="dashboard-main">
+      <div class="learner-dashboard" id="trainer-dashboard-main">
+        <h1>👨‍🏫 Trainer Dashboard</h1>
+        <div class="dashboard-section">
+          <!-- <h2>📚 Manage Courses & Assignments</h2>
+          <p>Create, edit, and organize your courses and assignments here.</p>
+          <button id="create-course-btn">Create New Course</button>
+          <button id="create-assignment-btn">Create New Assignment</button>
+          <div id="courses-list"></div>
+        </div>
+        <div class="dashboard-section">
+          <h2>📈 Learner Progress & Analytics</h2>
+          <div id="progress-analytics"></div>
+        </div>
+        <div class="dashboard-section">
+          <h2>📢 Notice Board</h2>
+          <button id="post-notice-btn">Post Update</button>
+          <div id="notice-board"></div>
+        </div>
+        <div class="dashboard-section">
+          <h2>🟢 Live Classes</h2>
+          <button id="schedule-class-btn">Schedule Live Class</button>
+          <div id="live-classes-list"></div>-->
+        </div>
+      </div>
+    </main>
+  </div>
+  <div id="ai-chatbox" class="ai-chatbox" style="display: none;">
+    <div class="ai-chatbox-header">
+      <span>
+        🤖 OmniLearn AI
+        <br />
+        <span class="ai-powered-by">Powered by OpenAI</span>
+      </span>
+      <button id="close-ai-chatbox" class="close-chatbox">&times;</button>
+    </div>
+    <div class="ai-chatbox-messages" id="ai-chatbox-messages">
+      <!-- Messages will appear here -->
+    </div>
+    <form class="ai-chatbox-input" id="ai-chatbox-form" autocomplete="off">
+      <input type="text" id="ai-chatbox-input" placeholder="Type your question..." autocomplete="off" />
+      <button type="submit">Send</button>
+    </form>
+  </div>
+  <script type="module" src="trainer.js"></script>
 </body>
 </html> 
