@@ -567,13 +567,19 @@
   display: inline-block;
 } 
 .enrolled-units-section {
-  padding: 32px 0;
+  padding: 32px 0 24px 0;
+  background: #f7f9fb;
+  border-radius: 18px;
+  margin-bottom: 32px;
+  box-shadow: 0 2px 12px rgba(76,109,219,0.06);
 }
 .enrolled-units-section h2 {
   color: #4c6ddb;
   font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 24px;
+  border-left: 6px solid #7ebe91;
+  padding-left: 16px;
 }
 .enrolled-units-list {
   display: flex;
@@ -612,6 +618,25 @@
 .unit-instructor {
   font-size: 0.98rem;
   color: #888;
+}
+.enrolled-unit-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+.unenroll-btn {
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.unenroll-btn:hover {
+  background: #c0392b;
 }
 @media (max-width: 900px) {
   .enrolled-units-list {
@@ -1180,41 +1205,108 @@
     border-bottom: none;
   }
 }
+html {
+  font-size: 16px;
+}
+body {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+.learner-dashboard, .quizzes-section, .dashboard-section, .dashboard-header, .side-menu, .dashboard-main {
+  font-size: 1rem;
+} 
+
 @media (max-width: 600px) {
   html {
     font-size: 18px;
   }
-  .dashboard-header {
-    padding: 10px 4px 0 0;
-    min-height: 60px;
+  body {
+    font-size: 1.08rem;
+    line-height: 1.7;
   }
-  .menu-toggle {
-    width: 38px;
-    height: 38px;
-  }
-  .side-menu {
-    top: 60px;
-    width: 180px;
-    left: -180px;
-  }
-  .side-menu.open {
-    left: 0;
-  }
-  .dashboard-main {
-    padding: 70px 0.2rem 0 0.2rem;
-  }
-  .learner-dashboard, .quizzes-section {
-    padding: 18px 6px;
+  .learner-dashboard, .quizzes-section, .dashboard-section, .dashboard-header, .side-menu, .dashboard-main {
     font-size: 1.08rem;
   }
+  /* Overlay for menu */
+  .side-menu.open::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(38,58,122,0.18);
+    z-index: 1199;
+    pointer-events: auto;
+  }
+} 
+
+/* --- Enrolled/All Courses Section Distinction --- */
+.enrolled-units-section {
+  padding: 32px 0 24px 0;
+  background: #f7f9fb;
+  border-radius: 18px;
+  margin-bottom: 32px;
+  box-shadow: 0 2px 12px rgba(76,109,219,0.06);
 }
-html {
-  font-size: 20px;
+.enrolled-units-section h2 {
+  color: #4c6ddb;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  border-left: 6px solid #7ebe91;
+  padding-left: 16px;
 }
-body {
-  font-size: 1.1rem;
-  line-height: 1.7;
+.offered-courses-section {
+  padding: 32px 0 24px 0;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(76,109,219,0.06);
 }
-.learner-dashboard, .quizzes-section, .dashboard-section, .dashboard-header, .side-menu, .dashboard-main {
-  font-size: 1.08rem;
+.offered-courses-section h2 {
+  color: #7ebe91;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  border-left: 6px solid #4c6ddb;
+  padding-left: 16px;
+}
+.enrolled-units-list, .offered-courses-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+@media (max-width: 900px) {
+  .enrolled-units-list, .offered-courses-list {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+/* --- Button Styles --- */
+.enroll-btn, .continue-learning-btn {
+  background: #4c6ddb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 18px;
+  transition: background 0.2s;
+}
+.enroll-btn:hover, .continue-learning-btn:hover {
+  background: #7ebe91;
+}
+@media (max-width: 900px) {
+  .offered-courses-list {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .offered-course-card {
+    min-width: unset;
+    max-width: 100%;
+    width: 100%;
+    padding: 18px 12px;
+  }
 } 

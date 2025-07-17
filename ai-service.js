@@ -1,10 +1,9 @@
 // AI Service for OmniLearn Chatbot using OpenRouter
 class AIService {
   constructor() {
-    // OpenRouter API configuration
-    this.apiKey = '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';
-    this.defaultModel = 'openai/gpt-4o-mini'; // Fast, capable model
-    this.apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+    this.apiKey = 'AIzaSyB-_sGIZrm3h60seCPU93wfkK4XRz43TT8';
+    this.apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+    this.defaultModel = 'gemini-pro';
     
     console.log('AIService initialized with OpenRouter API');
     console.log('API URL:', this.apiUrl);
@@ -74,54 +73,25 @@ class AIService {
   // Make API request using OpenRouter
   async makeAPIRequest(messages, attempt = 1) {
     await this.waitForRateLimit();
-
-    console.log('Making API request to OpenRouter');
-    console.log('API URL:', this.apiUrl);
-    console.log('Sending messages:', messages.length, 'total messages');
-
+    const prompt = messages.map(m => m.content).join('\n');
+    const url = this.apiUrl + '?key=' + this.apiKey;
+    const body = { contents: [{ parts: [{ text: prompt }] }] };
     try {
-      const requestBody = {
-        model: this.defaultModel,
-        messages: messages,
-        max_tokens: 500,
-        temperature: 0.7
-      };
-
-      console.log('Request body:', JSON.stringify(requestBody, null, 2));
-
-      const response = await fetch(this.apiUrl, {
+      const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-          'HTTP-Referer': window.location.origin,
-          'X-Title': 'OmniLearn AI Assistant'
-        },
-        body: JSON.stringify(requestBody)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
       });
-
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API Error Response:', errorText);
         throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
-
       const data = await response.json();
-      console.log('OpenRouter response received:', data);
-      
-      // Handle OpenRouter response format
-      if (data && data.choices && data.choices[0] && data.choices[0].message) {
-        const aiResponse = data.choices[0].message.content;
-        console.log('AI response extracted:', aiResponse.substring(0, 100) + '...');
-        return aiResponse;
-      } else {
-        console.error('Unexpected OpenRouter response format:', data);
-        throw new Error('Unexpected response format from OpenRouter');
+      let aiResponse = '';
+      if (data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+        aiResponse = data.candidates[0].content.parts.map(p => p.text).join(' ');
       }
-
+      return aiResponse;
     } catch (error) {
       console.error('OpenRouter API error:', error);
       console.error('Error details:', {

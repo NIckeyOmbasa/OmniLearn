@@ -315,54 +315,74 @@ body, html {
 @media (max-width: 900px) {
   .container {
     flex-direction: column;
+    height: auto;
+    min-height: 100vh;
   }
   .left-section, .right-section {
-    flex: none;
+    min-height: unset;
+    max-height: unset;
+    height: auto;
     width: 100%;
-    min-height: 50vh;
     box-shadow: none;
+    padding: 32px 0 0 0;
   }
   .left-section {
-    padding: 40px 20px;
-    border-radius: 0 0 32px 32px;
+    padding: 32px 16px 0 16px;
   }
   .right-section {
-    padding: 40px 0;
+    padding: 0 0 32px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: unset;
+    max-height: unset;
   }
-  .right-logo-area {
-    padding: 16px 8px 0 0;
-    min-height: 40px;
+  .right-flex-col {
+    min-height: unset;
+    max-height: unset;
+    height: auto;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
   }
-  .right-logo-img {
-    width: 40px;
-    height: 40px;
+  .right-form-area {
+    min-height: unset;
+    max-height: unset;
+    height: auto;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5vw;
   }
   .auth-panel {
-    padding: 12px 2px 8px 2px;
-    margin: 30px auto 30px auto;
-    font-size: 0.93rem;
-  }
-  .auth-form h2 {
-    font-size: 1.05rem;
+    margin: 32px auto 0 auto;
+    max-width: 380px;
+    width: 100%;
+    padding: 28px 18px 18px 18px;
+    box-sizing: border-box;
   }
 }
-
 @media (max-width: 600px) {
+  html {
+    font-size: 18px;
+  }
+  body {
+    font-size: 1.08rem;
+    line-height: 1.7;
+  }
+  .auth-panel, .right-section, .right-form-area, .right-flex-col, .container, .left-section, .why-choose, .features-list, .tagline, .logo-tagline, .auth-form, .auth-btn, .auth-tabs, .auth-tab, .form-group, .form-group label, .form-group input, .password-wrapper, .toggle-password, .eye-icon, .role-links, .landing-header-logo, .landing-logo-text {
+    font-size: 1.08rem;
+  }
   .auth-panel {
-    padding: 16px 4px 12px 4px;
+    margin: 24px auto 0 auto;
     max-width: 98vw;
-    margin: 60px auto 60px auto;
+    width: 100%;
+    padding: 18px 4vw 18px 4vw;
+    box-sizing: border-box;
   }
-  .auth-form h2 {
-    font-size: 1.15rem;
-  }
-  .auth-avatar {
-    width: 48px;
-    height: 48px;
-    font-size: 1.5rem;
-  }
-  .right-logo-area {
-    display: none !important;
+  .right-form-area {
+    padding: 0 2vw;
   }
 }
 

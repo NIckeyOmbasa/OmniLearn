@@ -169,7 +169,8 @@ document.getElementById('create-course-form').addEventListener('submit', async f
     doc_url: docUrl,
     video_url: videoUrl || videoLink,
     created_by: user.id,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    published: true // ensure course is published
   }]);
   if (courseError) {
     alertService.updateLoading(loadingId, 'error', 'Database Error', courseError.message);

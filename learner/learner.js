@@ -41,23 +41,19 @@ async function fetchLearnerDashboardData() {
   // Fetch enrollments with course and instructor info
   const { data: enrollments, error: enrollmentsError } = await supabase
     .from('enrollments')
-    .select('*, courses(*, created_by), courses:course_id(*, created_by), profiles:learner_id(full_name)')
+    .select('*, courses(*), profiles:learner_id(full_name)')
     .eq('learner_id', userId);
+  console.log('Fetched enrollments:', enrollments);
 
-  // Fetch courses for timetable and progress
-  const courseIds = enrollments ? enrollments.map(e => e.course_id) : [];
-  let courses = [];
-  if (courseIds.length > 0) {
-    const { data: coursesData } = await supabase
-      .from('courses')
-      .select('*')
-      .in('id', courseIds);
-    courses = coursesData || [];
-  }
+  // Use joined course data directly for enrolled courses
+  const courses = (enrollments || [])
+    .map(e => e.courses)
+    .filter(Boolean);
 
   // Fetch assignments for assignments due
   let assignments = [];
-  if (courseIds.length > 0) {
+  if (courses.length > 0) {
+    const courseIds = courses.map(c => c.id);
     const { data: assignmentsData } = await supabase
       .from('assignments')
       .select('*')
@@ -67,7 +63,8 @@ async function fetchLearnerDashboardData() {
 
   // Fetch progress/grades
   let progress = [];
-  if (courseIds.length > 0) {
+  if (courses.length > 0) {
+    const courseIds = courses.map(c => c.id);
     const { data: progressData } = await supabase
       .from('progress')
       .select('*')
@@ -77,7 +74,6 @@ async function fetchLearnerDashboardData() {
   }
 
   // Fetch quiz performance (from assignments or progress)
-  // For simplicity, use assignments of type 'quiz' and their grades
   let quizPerformance = [];
   if (assignments.length > 0) {
     quizPerformance = assignments
@@ -104,8 +100,6 @@ async function fetchLearnerDashboardData() {
   let allUnitsCompleted = false;
   if (courses.length > 0 && completedUnits.length === courses.length) {
     allUnitsCompleted = true;
-    // Optionally fetch from certifications table
-    // For now, simulate
     certifications = [{ course: 'OmniLearn Full Course', date: new Date().toLocaleDateString(), file: '#' }];
   }
 
@@ -131,6 +125,15 @@ async function fetchLearnerDashboardData() {
   const assignmentsDue = assignments.filter(a => a.due_date && new Date(a.due_date) > now && !a.completed).length;
   const totalAssignments = assignments.length;
 
+  // Fetch all offered courses
+  let allCourses = [];
+  const { data: allCoursesData } = await supabase
+    .from('courses')
+    .select('*')
+    .eq('published', true);
+  allCourses = allCoursesData || [];
+  console.debug('All offered courses:', allCourses);
+
   return {
     enrollments,
     courses,
@@ -143,7 +146,8 @@ async function fetchLearnerDashboardData() {
     timetable,
     overallProgress,
     assignmentsDue,
-    totalAssignments
+    totalAssignments,
+    allCourses // add allCourses to return
   };
 }
 
@@ -245,24 +249,111 @@ async function renderEnrolledUnits() {
   dashboardMain.innerHTML = '<div class="dashboard-loading"><div class="spinner"></div><div class="loader-text">Loading enrolled units...</div></div>';
   try {
     const data = await fetchLearnerDashboardData();
+    const enrolledIds = new Set(data.courses.map(c => c.id));
+    // Build a map of course_id to progress
+    const progressMap = {};
+    (data.progress || []).forEach(p => { progressMap[p.course_id] = p.progress || 0; });
     dashboardMain.innerHTML = `
       <div class="enrolled-units-section">
-        <h2>📚 Enrolled Units</h2>
+        <h2>📚 Enrolled Courses</h2>
         <div class="enrolled-units-list">
-          ${data.courses.map(unit => `
-            <div class="enrolled-unit-card">
-              <div class="unit-code">${unit.code || ''}</div>
-              <div class="unit-name">${unit.title || ''}</div>
-              <div class="unit-instructor">Instructor: ${unit.instructor || ''}</div>
-              <div class="unit-progress-bar-bg">
-                <div class="unit-progress-bar-fill" style="width: ${unit.progress || 0}%"></div>
+          ${data.courses.length === 0 ? '<div class="no-enrolled">You are not enrolled in any courses yet.</div>' :
+            data.courses.map(unit => `
+              <div class="enrolled-unit-card">
+                <div class="unit-code">${unit.code || ''}</div>
+                <div class="unit-name">${unit.title || ''}</div>
+                <div class="unit-instructor">Instructor: ${unit.instructor || ''}</div>
+                <div class="unit-progress-bar-bg">
+                  <div class="unit-progress-bar-fill" style="width: ${progressMap[unit.id] || 0}%"></div>
+                </div>
+                <div class="unit-progress-label">${progressMap[unit.id] || 0}% complete</div>
+                <div class="enrolled-unit-actions">
+                  <button class="continue-learning-btn" data-course-id="${unit.id}">Continue Learning</button>
+                  <button class="unenroll-btn" data-course-id="${unit.id}">Unenroll</button>
+                </div>
               </div>
-              <div class="unit-progress-label">${unit.progress || 0}% complete</div>
-            </div>
-          `).join('')}
+            `).join('')}
+        </div>
+      </div>
+      <div class="offered-courses-section">
+        <h2>🌐 All Courses</h2>
+        <div class="offered-courses-list">
+          ${data.allCourses.length === 0 ? '<div class="no-offered">No courses available.</div>' :
+            data.allCourses.map(course => {
+              const isEnrolled = enrolledIds.has(course.id);
+              return `
+                <div class="offered-course-card">
+                  <div class="unit-code">${course.code || ''}</div>
+                  <div class="unit-name">${course.title || ''}</div>
+                  <div class="unit-instructor">Instructor: ${course.instructor || ''}</div>
+                  ${isEnrolled
+                    ? `<button class="continue-learning-btn" data-course-id="${course.id}">Continue Learning</button>`
+                    : `<button class="enroll-btn" data-course-id="${course.id}">Enroll & Start Learning</button>`}
+                </div>
+              `;
+            }).join('')}
         </div>
       </div>
     `;
+    // Add enroll button listeners
+    document.querySelectorAll('.enroll-btn').forEach(btn => {
+      btn.addEventListener('click', async function() {
+        const courseId = this.getAttribute('data-course-id');
+        this.disabled = true;
+        this.textContent = 'Enrolling...';
+        // Prevent duplicate enrollment
+        const { data: { user } } = await supabase.auth.getUser();
+        const { data: existing } = await supabase
+          .from('enrollments')
+          .select('id')
+          .eq('learner_id', user.id)
+          .eq('course_id', courseId)
+          .maybeSingle();
+        if (existing) {
+          showCustomAlert('You are already enrolled in this course.');
+          renderEnrolledUnits();
+          return;
+        }
+        // Insert enrollment in DB
+        const { error } = await supabase
+          .from('enrollments')
+          .insert([{ learner_id: user.id, course_id: courseId }]);
+        if (!error) {
+          showCustomAlert('Enrolled successfully!');
+          renderEnrolledUnits();
+        } else {
+          this.disabled = false;
+          this.textContent = 'Enroll & Start Learning';
+          showCustomAlert('Error enrolling: ' + error.message);
+        }
+      });
+    });
+    // Add continue learning button listeners
+    document.querySelectorAll('.continue-learning-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const courseId = this.getAttribute('data-course-id');
+        window.location.href = `/omnilearn/learner/course-details.html?courseId=${courseId}`;
+      });
+    });
+    // Add unenroll button listeners
+    document.querySelectorAll('.unenroll-btn').forEach(btn => {
+      btn.addEventListener('click', async function() {
+        const courseId = this.getAttribute('data-course-id');
+        if (!confirm('Are you sure you want to unenroll from this course?')) return;
+        const { data: { user } } = await supabase.auth.getUser();
+        const { error } = await supabase
+          .from('enrollments')
+          .delete()
+          .eq('learner_id', user.id)
+          .eq('course_id', courseId);
+        if (!error) {
+          showCustomAlert('Unenrolled successfully!');
+          renderEnrolledUnits();
+        } else {
+          showCustomAlert('Error unenrolling: ' + error.message);
+        }
+      });
+    });
   } catch (err) {
     dashboardMain.innerHTML = `<div class="dashboard-error">Error loading enrolled units: ${err.message}</div>`;
   }
@@ -387,19 +478,40 @@ async function renderCompletedUnits() {
   dashboardMain.innerHTML = '<div class="dashboard-loading"><div class="spinner"></div><div class="loader-text">Loading completed units...</div></div>';
   try {
     const data = await fetchLearnerDashboardData();
+    // For each enrolled course, calculate content progress and assignments percentage
+    const userId = (await supabase.auth.getUser()).data.user.id;
+    const enrolledCourses = data.courses;
+    const progressMap = {};
+    (data.progress || []).forEach(p => { progressMap[p.course_id] = p.progress || 0; });
+    // Assignments: group by course and calculate percent complete
+    const assignmentsByCourse = {};
+    (data.assignments || []).forEach(a => {
+      if (!assignmentsByCourse[a.course_id]) assignmentsByCourse[a.course_id] = [];
+      assignmentsByCourse[a.course_id].push(a);
+    });
     dashboardMain.innerHTML = `
       <div class="completed-units-section">
         <h2>✅ Completed Units</h2>
         <div class="completed-units-list">
-          ${data.completedUnits.length === 0 ? '<div class="no-completed">No units completed yet.</div>' :
-            data.completedUnits.map(unit => `
-              <div class="completed-unit-card">
-                <div class="unit-code">${unit.code}</div>
-                <div class="unit-name">${unit.name}</div>
-                <div class="unit-instructor">Instructor: ${unit.instructor}</div>
-                <div class="unit-completed-date">Completed: ${unit.completedDate}</div>
-              </div>
-            `).join('')}
+          ${enrolledCourses.length === 0 ? '<div class="no-completed">No units enrolled yet.</div>' :
+            enrolledCourses.map(unit => {
+              const contentProgress = progressMap[unit.id] || 0;
+              const assignments = assignmentsByCourse[unit.id] || [];
+              const totalAssignments = assignments.length;
+              const completedAssignments = assignments.filter(a => a.completed).length;
+              const assignmentsPercent = totalAssignments > 0 ? Math.round((completedAssignments / totalAssignments) * 100) : 0;
+              const isComplete = contentProgress === 100 && assignmentsPercent >= 70;
+              return `
+                <div class="completed-unit-card">
+                  <div class="unit-code">${unit.code || ''}</div>
+                  <div class="unit-name">${unit.title || ''}</div>
+                  <div class="unit-instructor">Instructor: ${unit.instructor || ''}</div>
+                  <div class="unit-progress-label">Course Content: <b>${contentProgress}%</b></div>
+                  <div class="unit-progress-label">Assignments: <b>${assignmentsPercent}%</b></div>
+                  <div class="unit-completed-date">Status: <span style="color:${isComplete ? '#7ebe91' : '#e74c3c'};font-weight:700;">${isComplete ? 'Complete' : 'Incomplete'}</span></div>
+                </div>
+              `;
+            }).join('')}
         </div>
       </div>
     `;
@@ -577,37 +689,39 @@ async function renderAssignments() {
 }
 
 // --- SMART QUIZ GENERATION SYSTEM ---
+async function generateQuizWithGemini(courseContent) {
+  const apiKey = 'AIzaSyB-_sGIZrm3h60seCPU93wfkK4XRz43TT8';
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey;
+  const prompt = `Generate a 20-question multiple choice quiz based on the following content. Each question should have 4 options, one correct answer, and a brief explanation. Format as JSON: [{question, options, answer, explanation}]. Content: ${courseContent}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+  });
+  const data = await response.json();
+  let quizText = '';
+  if (data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+    quizText = data.candidates[0].content.parts.map(p => p.text).join(' ');
+  }
+  let quiz;
+  try {
+    quiz = JSON.parse(quizText);
+  } catch (e) {
+    const match = quizText.match(/\[.*\]/s);
+    quiz = match ? JSON.parse(match[0]) : [];
+  }
+  return quiz;
+}
+
 async function startQuiz(courseId, courses) {
   const quizArea = document.getElementById('quiz-area');
   quizArea.innerHTML = '<div class="dashboard-loading"><div class="spinner"></div><div class="loader-text">Generating quiz...</div></div>';
-  // Fetch learner's previous quiz performance (simulate with localStorage for now)
-  const userId = (await supabase.auth.getUser()).data.user.id;
-  let quizHistory = JSON.parse(localStorage.getItem(`quizHistory_${userId}_${courseId}`) || '[]');
-  // Determine difficulty
-  let difficulty = 'easy';
-  if (quizHistory.length > 0 && quizHistory[quizHistory.length - 1].score >= 70) {
-    difficulty = 'medium';
-  }
-  if (quizHistory.length > 1 && quizHistory[quizHistory.length - 1].score >= 70 && quizHistory[quizHistory.length - 2].score >= 70) {
-    difficulty = 'hard';
-  }
-  // Track weak topics
-  let weakTopics = {};
-  quizHistory.forEach(q => {
-    if (q.weakTopics) {
-      for (const topic in q.weakTopics) {
-        weakTopics[topic] = (weakTopics[topic] || 0) + q.weakTopics[topic];
-      }
-    }
-  });
-  // Prepare prompt for AI quiz generation
+  // Fetch course content for the selected course
   const course = courses.find(c => c.id == courseId);
-  let prompt = `Generate a ${difficulty} quiz for the course "${course.title}". The quiz should have up to 20 questions. Each question should be tagged with its topic and unit. If possible, include more questions from these weak topics: ${Object.keys(weakTopics).join(', ') || 'none'}. Format as JSON: [{question, options, answer, topic, unit}].`;
-  // Call AI service
+  const courseContent = course && course.outline ? course.outline.map(t => t.title + ': ' + (t.content || '') + (t.subtopics ? t.subtopics.map(s => s.title + ': ' + (s.content || '')).join(' ') : '')).join(' ') : '';
   let quizQuestions = [];
   try {
-    const aiQuiz = await aiService.sendMessage(prompt, userId, 'learner');
-    quizQuestions = JSON.parse(aiQuiz);
+    quizQuestions = await generateQuizWithGemini(courseContent);
   } catch (e) {
     quizArea.innerHTML = '<div class="dashboard-error">Failed to generate quiz. Please try again.</div>';
     return;
@@ -616,25 +730,26 @@ async function startQuiz(courseId, courses) {
   let currentQ = 0;
   let score = 0;
   let userAnswers = [];
-  let topicStats = {};
   function renderQuestion() {
     if (currentQ >= quizQuestions.length) {
       // Quiz complete
-      let weakTopicsResult = {};
-      for (const topic in topicStats) {
-        if (topicStats[topic].correct / topicStats[topic].total < 0.7) {
-          weakTopicsResult[topic] = topicStats[topic].total - topicStats[topic].correct;
-        }
-      }
       quizArea.innerHTML = `<div class="quiz-result">
         <h3>Quiz Complete!</h3>
         <div>Score: ${score} / ${quizQuestions.length} (${Math.round((score/quizQuestions.length)*100)}%)</div>
-        <div>${Object.keys(weakTopicsResult).length ? 'You are weak in: ' + Object.keys(weakTopicsResult).join(', ') : 'Great job! No weak topics detected.'}</div>
+        <div class="quiz-review-list">
+          ${quizQuestions.map((q, i) => {
+            const userAns = userAnswers[i];
+            const isCorrect = userAns && userAns.answer === q.answer;
+            return `<div class="quiz-review-item" style="margin-bottom:16px;">
+              <div><b>Q${i+1}:</b> ${q.question}</div>
+              <div>Your answer: <span style="color:${isCorrect ? '#7ebe91' : '#e74c3c'};font-weight:600;">${userAns ? userAns.answer : 'No answer'}</span></div>
+              <div>Correct answer: <b>${q.answer}</b></div>
+              <div>Explanation: <i>${q.explanation || 'No explanation provided.'}</i></div>
+            </div>`;
+          }).join('')}
+        </div>
         <button id="retake-quiz-btn">Retake Quiz</button>
       </div>`;
-      // Save quiz history
-      quizHistory.push({score: Math.round((score/quizQuestions.length)*100), weakTopics: weakTopicsResult});
-      localStorage.setItem(`quizHistory_${userId}_${courseId}`, JSON.stringify(quizHistory));
       document.getElementById('retake-quiz-btn').onclick = () => startQuiz(courseId, courses);
       return;
     }
@@ -649,12 +764,8 @@ async function startQuiz(courseId, courses) {
     document.getElementById('submit-q-btn').onclick = () => {
       const selected = document.querySelector('input[name="quiz-q"]:checked');
       if (!selected) return alert('Please select an answer.');
-      userAnswers.push({q: q.question, answer: selected.value, correct: selected.value === q.answer, topic: q.topic, unit: q.unit});
+      userAnswers.push({q: q.question, answer: selected.value});
       if (selected.value === q.answer) score++;
-      // Track topic stats
-      if (!topicStats[q.topic]) topicStats[q.topic] = {correct:0, total:0};
-      topicStats[q.topic].total++;
-      if (selected.value === q.answer) topicStats[q.topic].correct++;
       currentQ++;
       renderQuestion();
     };
