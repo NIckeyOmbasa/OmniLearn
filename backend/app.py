@@ -30,7 +30,7 @@ if missing_vars:
 app = Flask(__name__)
 CORS(app, resources={
     r"/api/*": {
-                "origins": ["http://localhost:5501", "http://127.0.0.1:5500", "http://127.0.0.1:5501"],  # Common frontend origins
+                "origins": ["http://localhost:5501", "http://127.0.0.1:5500", "http://127.0.0.1:5501", "https://omni-learn-nine.vercel.app"],  # Common frontend origins
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type"]
     }
