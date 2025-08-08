@@ -46,6 +46,8 @@ This project is a dynamic, AI-driven learning platform designed to help users ex
     ├── quiz.html           # Quiz page
     └── results.html        # Quiz results page
 ```
+## Live site
+Visit [omni-learn-nine.vercel.app](https://omni-learn-nine.vercel.app)
 
 ## Setup and Installation
 
@@ -104,7 +106,7 @@ This project is designed to be deployed with a hybrid approach: the backend on *
 1.  **Update the API URL**:
     -   In `frontend/js/main.js`, change the `API_BASE_URL` variable to your live Render URL.
     -   Commit and push this change to GitHub.
-2.  **Sign up** at [netlify.com](https://netlify.com) and create a **New site from Git**.
+2.  **Sign up** at [netlify.com](https://netlify.com) or [vercel.com](https://vercel.com) and create a **New site from Git**.
 3.  **Connect your GitHub repository**.
 4.  **Configure the site**:
     -   **Base directory**: `frontend`
