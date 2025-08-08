@@ -1,0 +1,23 @@
+# Core Requirements
+Flask==3.0.0
+Flask-Cors==4.0.0
+gunicorn==22.0.0
+python-dotenv==1.0.0
+
+# AI Integration
+openai==1.3.0
+anthropic==0.8.0  # For Claude AI
+google-api-python-client==2.108.0  # For YouTube API
+
+# HTTP & Web
+requests==2.31.0
+urllib3==2.0.7  # Ensure compatibility with requests
+
+# Development
+pytest==7.4.0  # For testing
+black==23.9.1  # Code formatting
+flake8==6.1.0  # Linting
+
+# Utilities
+python-dateutil==2.8.2  # For date handling
+pytz==2023.3.post1  # Timezone support

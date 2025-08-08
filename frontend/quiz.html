@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omnilearn - Quiz</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-container">
+                <a href="index.html" style="text-decoration: none; display: flex; align-items: center; gap: 1.5rem;">
+                    <img src="https://i.ibb.co/99BZKKmd/logo.png" alt="Omnilearn Logo" class="logo">
+                    <div class="header-text">
+                        <h1>Omnilearn</h1>
+                        <p class="tagline">Master any topic with our gamified learning experience</p>
+                    </div>
+                </a>
+            </div>
+        </header>
+        <main>
+            <div id="quiz-container">
+                <div class="quiz-header">
+                    <span id="question-counter">Question 1 / 10</span>
+                    <span id="score">Score: 0</span>
+                </div>
+
+                <h2 id="question-text">Loading question...</h2>
+                <div id="options-container" class="options-grid">
+                    <!-- Options will be dynamically inserted here -->
+                </div>
+                
+                <div id="feedback-section" class="hidden">
+                    <h3 id="feedback-text"></h3>
+                    <p id="explanation-text"></p>
+                    <button id="next-question">Next Question</button>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="https://js.puter.com/v2/"></script>
+    <script src="js/quiz.js"></script>
+</body>
+</html>

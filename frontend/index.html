@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omnilearn - Start Learning</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-container">
+                <img src="https://i.ibb.co/99BZKKmd/logo.png" alt="Omnilearn Logo" class="logo">
+                <div class="header-text">
+                    <h1>Omnilearn</h1>
+                    <p class="tagline">Master any topic with our gamified learning experience</p>
+                </div>
+            </div>
+        </header>
+        
+        <main>
+            <section class="hero">
+                <h2>Learn Anything, Anytime</h2>
+                <p class="hero-description">Discover personalized learning paths, interactive lessons, and track your progress with our AI-powered platform.</p>
+                
+                <div class="search-container">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="topic-input" placeholder="What would you like to learn today?">
+                        <button id="learn-btn" class="gradient-btn">Start Learning</button>
+                    </div>
+                </div>
+                
+                <div class="features">
+                    <div class="feature">
+                        <i class="fas fa-bolt"></i>
+                        <span>Fast Learning</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-gamepad"></i>
+                        <span>Gamified</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-user-graduate"></i>
+                        <span>Personalized</span>
+                    </div>
+                </div>
+            </section>
+            
+            <div id="content-display" class="hidden">
+                <div class="summary-section card">
+                    <h2 id="summary-title" class="content-title"></h2>
+                    <div id="summary-content"></div>
+                </div>
+
+                <div id="flashcards-section" class="flashcards-section card hidden">
+                    <h2 class="content-title">Key Concepts</h2>
+                    <div id="flashcards-container" class="flashcards-container">
+                        <!-- Flashcards will be dynamically inserted here -->
+                    </div>
+                </div>
+                
+                <div class="videos-section card">
+                    <h2>Recommended Videos</h2>
+                    <div id="videos-container"></div>
+                </div>
+                
+                <button id="start-quiz" class="gradient-btn hidden">Start Quiz</button>
+            </div>
+        </main>
+        
+        <footer>
+            <p>&copy; 2025 Omnilearn. All rights reserved.</p>
+        </footer>
+    </div>
+    
+    <script src="https://js.puter.com/v2/"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
