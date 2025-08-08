@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:5000'; // Replace with your live backend URL when deployed
+const API_BASE_URL = 'https://omnilearn.onrender.com'; // Replace with your live backend URL when deployed
 
 document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
